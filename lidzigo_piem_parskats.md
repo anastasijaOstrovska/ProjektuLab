@@ -1,1 +1,1 @@
-// Šeit ir lidzīgo risinājumu parskats.
+//Šeit ir lidzīgo risinājumu parskats.
