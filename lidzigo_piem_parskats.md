@@ -1,4 +1,4 @@
-# Šeit ir lidzīgo risinājumu parskats.
+# Lidzīgo risinājumu parskats.
 | Item              | In Stock | Price |
 | :---------------- | :------: | ----: |
 | Python Hat        |   True   | 23.99 |
