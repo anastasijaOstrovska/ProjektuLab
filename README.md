@@ -2,11 +2,11 @@
 ## Izvēlēta problēmsituācija: Drukāšanas pasūtījumu izpildes plānošana
 
 Dalībnieki:
-Aleksandrs Kozaļetovs
-Anastasija Ostrovska
-Sofija Kamuškina
-Edvards Bārtulis
-Anželika Krasiļņikova
+Aleksandrs Kozaļetovs, 
+Anastasija Ostrovska, 
+Sofija Kamuškina, 
+Edvards Bārtulis, 
+Anželika Krasiļņikova.
 
 # Lidzīgo risinājumu parskats.
 | Risinājums                                      | Īss apraksts                                                                                                                                                     | Svarīgākās iezīmes                                                                                                                                                  | Ierobežojumi                                                                           | Saite uz projektu                           |
