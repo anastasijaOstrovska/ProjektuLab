@@ -20,7 +20,7 @@ Anželika Krasiļņikova.
 
 # Tehniskais risinājums
 ## Konceptu modelis
-(ProjektuLab/KonceptuModel.png)
+![](KonceptModel.png)
 # Novērtējums 
 # Secinājumi
 
