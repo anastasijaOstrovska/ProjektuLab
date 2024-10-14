@@ -44,6 +44,8 @@ Anželika Krasiļņikova.
 
 ## Konceptu modelis
 ![](KonceptModel.png)
+## Tehnoloģiju steks
+![](tehnologijuSteks.png)
 # Novērtējums 
 # Secinājumi
 
