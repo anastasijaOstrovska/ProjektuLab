@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimization Result</title>
+    <style>
+        /* General styles */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        /* Header styles */
+        header {
+            background: #35424a;
+            color: #ffffff;
+            padding-top: 30px;
+            min-height: 70px;
+            border-bottom: #007bff 3px solid;
+        }
+        header h1 {
+            margin: 0;
+            text-align: center;
+            padding-bottom: 20px;
+        }
+
+        /* Result styles */
+        .result-container {
+            background: #ffffff;
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 5px;
+        }
+        .result-container h2 {
+            text-align: center;
+            color: #35424a;
+        }
+        .result-container ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .result-container li {
+            margin-bottom: 10px;
+        }
+        .statistics {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .machine-stats {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Optimization Result</h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="result-container">
+            <h2>Book Production Plan</h2>
+            <ul>
+                {% for book in books %}
+                <li><strong>{{ book.name }}:</strong> Produce {{ result.quantities[loop.index0] }} units</li>
+                {% endfor %}
+            </ul>
+
+            <div class="statistics">
+                <h2>Statistics</h2>
+                <p><strong>Total books produced:</strong> {{ result.total_books }}</p>
+                <p><strong>Gross income:</strong> ${{ result.gross_income }}</p>
+                <p><strong>Net income (after material costs):</strong> ${{ result.net_income }}</p>
+            </div>
+
+            <div class="machine-stats">
+                <h2>Machine Statistics</h2>
+                <ul>
+                    {% for machine in result.machine_stats %}
+                    <li>
+                        <strong>Machine {{ machine }}:</strong>
+                        <ul>
+                            <li>Total time worked: {{ result.machine_stats[machine]['time_worked'] / 60 }} hours</li>
+                            <li>Books produced:</li>
+                            <ul>
+                                {% for book_name, count in result.machine_stats[machine]['produced_books'].items() %}
+                                    <li>{{ book_name }}: {{ count }} units</li>
+                                {% endfor %}
+                            </ul>
+                        </ul>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
