@@ -1,0 +1,112 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Optimize Book Production</title>
+        <style>
+            /* General styles */
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                margin: 0;
+                padding: 0;
+                background-color: #f4f4f4;
+            }
+            .container {
+                width: 80%;
+                margin: auto;
+                overflow: hidden;
+                padding: 20px;
+            }
+
+            /* Header styles */
+            header {
+                background: #35424a;
+                color: #ffffff;
+                padding-top: 30px;
+                min-height: 70px;
+                border-bottom: #007bff 3px solid;
+            }
+            header h1 {
+                margin: 0;
+                text-align: center;
+                padding-bottom: 20px;
+            }
+
+            /* Book production form styles */
+            .book-form {
+                background: #ffffff;
+                max-width: 600px;
+                margin: 30px auto;
+                padding: 20px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                border-radius: 5px;
+            }
+            .book-form h2 {
+                text-align: center;
+                color: #35424a;
+            }
+            .book-form ul {
+                list-style-type: none;
+                padding: 0;
+            }
+            .book-form li {
+                margin-bottom: 10px;
+            }
+            .book-form button {
+                display: block;
+                width: 100%;
+                padding: 10px;
+                background: #007bff;
+                color: #ffffff;
+                border: none;
+                cursor: pointer;
+                border-radius: 3px;
+            }
+            .book-form button:hover {
+                background: #0056b3;
+            }
+            .slider {
+                margin: 10px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="container">
+                <h1>Book Production Optimization</h1>
+            </div>
+        </header>
+    
+        <div class="container">
+            <form class="book-form" method="POST">
+                <h2>Books Information</h2>
+                <ul>
+                    {% for book in books %}
+                    <li>{{ book.name }} - Selling Price: {{ book.selling_price }} - Material Cost: {{ book.material_cost }} - Min Books: {{ book.min_books }}</li>
+                    {% endfor %}
+                </ul>
+                <label for="total_days">Total Days (2 weeks = 14 days):</label>
+                <input type="range" id="total_days" name="total_days" min="{{ min_days }}" max="{{ max_days }}" value="{{ min_days }}">
+                <span id="total_days_value">${{ min_days }}</span>
+    
+                <label for="budget">Budget ($):</label>
+                <input type="range" id="budget" name="budget" min="{{ min_budget }}" max="{{ max_budget }}" value="{{ min_budget }}" class="slider">
+                <span id="budget_value">${{ min_budget }}</span>
+    
+                <button type="submit">Calculate Maximum Profit</button>
+            </form>
+        </div>
+    
+        <script>
+            // Обновление значений ползунков
+            document.getElementById('total_days').oninput = function() {
+                document.getElementById('total_days_value').innerText = this.value;
+            };
+            document.getElementById('budget').oninput = function() {
+                document.getElementById('budget_value').innerText = '$' + this.value;
+            };
+        </script>
+    </body>
+    </html>
