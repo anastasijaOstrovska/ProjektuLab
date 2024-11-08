@@ -9,11 +9,12 @@ app = Flask(__name__)
 load_dotenv('pswd.env')  # Загружает пароль из энв файла (помнняйте пароль потом в этом файле как база будет!)
 
 # Настройка подключения к базе данных
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST') 
+app.config['MYSQL_USER'] = os.getenv('MYSQL_USER')
 app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
-app.config['MYSQL_DB'] = 'projlab'
-app.secret_key = 'supersecretkey'
+app.config['MYSQL_DB'] = os.getenv('MYSQL_DB')
+app.config['MYSQL_PORT'] = int(os.getenv('MYSQL_PORT'))
+app.secret_key = os.getenv('APP_SECRET_KEY')
 
 mysql = MySQL(app)
 
@@ -36,11 +37,12 @@ def register():
         hashed_password = generate_password_hash(password)
         cursor = mysql.connection.cursor()
         try:
-            cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_password))
+#	    cursor.execute("INSERT INTO users (username, password, production_id) VALUES (%s, %s, %i)", (username, hashed_password, 1))
+            cursor.execute("INSERT INTO users (username, password, production_id) VALUES (%s, %s, %s)", (username, hashed_password, 1))
             mysql.connection.commit()
             return redirect(url_for('login'))
-        except:
-            return 'User already exists.'
+        except Exception as e:
+            return f"Error occurred: {str(e)}"
         finally:
             cursor.close()
     return render_template('register.html')
