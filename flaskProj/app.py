@@ -113,7 +113,7 @@ def optimize_books():
 
         return render_template('result.html', result=result, books=books)
 
-    return render_template('optimize_books.html', books=books, min_budget=min_budget, max_budget=max_budget, min_days = min_days,)
+    return render_template('optimize_books.html', books=books, min_budget=min_budget, max_budget=max_budget)
 
 
 
