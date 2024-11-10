@@ -1,0 +1,29 @@
+st<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Book</title>
+    <link rel="stylesheet" href="style_edit.css">
+</head>
+<body>
+<div class="container">
+    <h2>Edit Book</h2>
+    <form method="POST">
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name" value="{{ book.name }}" required>
+
+        <label for="selling_price">Selling Price:</label>
+        <input type="text" name="selling_price" id="selling_price" value="{{ book.selling_price }}" required>
+
+        <label for="material_cost">Material Cost:</label>
+        <input type="text" name="material_cost" id="material_cost" value="{{ book.material_cost }}" required>
+
+        <label for="min_books">Min Books:</label>
+        <input type="number" name="min_books" id="min_books" value="{{ book.min_books }}" required>
+
+        <button type="submit">Save Changes</button>
+    </form>
+</div>
+</body>
+</html>

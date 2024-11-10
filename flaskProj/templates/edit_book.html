@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Book</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_edit.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <a href="{{ url_for('books') }}">
+        <button type="button">
+            <i class="fas fa-arrow-left fa-1.5x"></i>
+        </button>
+    </a>
+    <h2>Edit Book</h2>
+    <form method="POST">
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name" value="{{ book.name }}" required>
+
+        <label for="description">Description:</label>
+        <input type="text" name="description" id="description" value="{{ book.description }}" >
+
+        <label for="selling_price">Selling Price:</label>
+        <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" name="selling_price" id="selling_price" value="{{ book.selling_price }}" required>
+
+        <button type="submit">Save Changes</button>
+
+    </form>
+</div>
+</body>
+</html>

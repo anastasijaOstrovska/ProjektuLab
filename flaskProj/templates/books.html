@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Optimize Book Productio{% endblock %}
+
+{% block content %}
+<!--id': book[0],-->
+<!--'name': book[1],-->
+<!--'selling_price': book[2],-->
+<!--'production_time': book[3],-->
+<!--'total_material_cost': book[4]-->
+<div class="container">
+    <form class="book-form" method="POST">
+        <h2>Books Information</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Book Name</th>
+                <th>Selling Price ($)</th>
+                <th>Production Time</th>
+                <th>Total material cost</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for book in books %}
+            <tr>
+                <td>{{ book.name }}</td>
+                <td>{{ book.selling_price }}</td>
+                <td>{{ book.production_time }}</td>
+                <td>{{ book.total_material_cost }}</td>
+                <td>
+                    <div class = "nav-buttons">
+                        <a href="{{ url_for('edit_book', book_id=book.id) }}" class="btn edit-btn">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{{ url_for('delete_book', book_id=book.id) }}" class="btn delete-btn">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    </div>
+
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+    </form>
+</div>
+
+
+{% endblock %}

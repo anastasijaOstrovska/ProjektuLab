@@ -89,25 +89,25 @@
                 <p><strong>Net income (after material costs):</strong> ${{ result.net_income }}</p>
             </div>
 
-            <div class="machine-stats">
-                <h2>Machine Statistics</h2>
-                <ul>
-                    {% for machine in result.machine_stats %}
-                    <li>
-                        <strong>Machine {{ machine }}:</strong>
-                        <ul>
-                            <li>Total time worked: {{ result.machine_stats[machine]['time_worked'] / 60 }} hours</li>
-                            <li>Books produced:</li>
-                            <ul>
-                                {% for book_name, count in result.machine_stats[machine]['produced_books'].items() %}
-                                    <li>{{ book_name }}: {{ count }} units</li>
-                                {% endfor %}
-                            </ul>
-                        </ul>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
+<!--            <div class="machine-stats">-->
+<!--                <h2>Machine Statistics</h2>-->
+<!--                <ul>-->
+<!--                    {% for machine in result.machine_stats %}-->
+<!--                    <li>-->
+<!--                        <strong>Machine {{ machine }}:</strong>-->
+<!--                        <ul>-->
+<!--                            <li>Total time worked: {{ result.machine_stats[machine]['time_worked'] / 60 }} hours</li>-->
+<!--                            <li>Books produced:</li>-->
+<!--                            <ul>-->
+<!--                                {% for book_name, count in result.machine_stats[machine]['produced_books'].items() %}-->
+<!--                                    <li>{{ book_name }}: {{ count }} units</li>-->
+<!--                                {% endfor %}-->
+<!--                            </ul>-->
+<!--                        </ul>-->
+<!--                    </li>-->
+<!--                    {% endfor %}-->
+<!--                </ul>-->
+<!--            </div>-->
         </div>
     </div>
 </body>

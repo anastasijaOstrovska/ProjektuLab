@@ -3,12 +3,15 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
-import optimize  # Импортирует файл с оптимизацией, надеюсь найдёт его в брэнче
+import optimize
+import random
+from decimal import Decimal
+import math
 
 app = Flask(__name__)
-load_dotenv('pswd.env')  # Загружает пароль из энв файла (помнняйте пароль потом в этом файле как база будет!)
+load_dotenv('pswd.env')
 
-# Настройка подключения к базе данных
+# Database connection
 app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST') 
 app.config['MYSQL_USER'] = os.getenv('MYSQL_USER')
 app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
@@ -65,60 +68,169 @@ def login():
 
 def calculate_min_budget(books):
     """
-    Рассчитать минимальный бюджет как сумму минимального количества книг * стоимость производства каждой книги.
+    Count minimal budget as sum of minimal quantity of books * cost of production of every book
     """
     min_budget = sum(book['min_books'] * book['material_cost'] for book in books)
     return min_budget
 
 def calculate_days_needed(books, is_max):
-    total_time = 0  # Время в часах
+    total_time = 0  # Time in hours
     for book in books:
         quantity = book['max_books'] if is_max else book['min_books']
         total_time += quantity * book['time_per_book']
-    return total_time / 8  # Переводим в дни (8 часов в день если рабочий день считаем)
+    return total_time / 8  # Transpose into days (8 working hours)
 
 @app.route('/optimize_books', methods=['GET', 'POST'])
 def optimize_books():
     if 'username' not in session:
         return redirect(url_for('login'))
+    cursor = mysql.connection.cursor()
 
-    # Пример параметров для книг и машин (пока база не подключена, потом поменять!!!!!)
-    books = [
-        {'name': 'Book 1', 'selling_price': 20.0, 'material_cost': 5.0, 'min_books': 10, 'max_books': 100, 'machine': 0, 'time_per_book': 1},
-        {'name': 'Book 2', 'selling_price': 25.0, 'material_cost': 7.0, 'min_books': 15, 'max_books': 150, 'machine': 1, 'time_per_book': 0.7},
-        {'name': 'Book 3', 'selling_price': 22.0, 'material_cost': 6.0, 'min_books': 20, 'max_books': 200, 'machine': 2, 'time_per_book': 1.2},
-        {'name': 'Book 4', 'selling_price': 18.0, 'material_cost': 4.5, 'min_books': 25, 'max_books': 250, 'machine': 3, 'time_per_book': 0.9},
-        {'name': 'Book 5', 'selling_price': 30.0, 'material_cost': 10.0, 'min_books': 5, 'max_books': 50, 'machine': 0, 'time_per_book': 1.5},
-        {'name': 'Book 6', 'selling_price': 28.0, 'material_cost': 8.0, 'min_books': 30, 'max_books': 300, 'machine': 1, 'time_per_book': 0.8},
-        {'name': 'Book 7', 'selling_price': 35.0, 'material_cost': 12.0, 'min_books': 12, 'max_books': 120, 'machine': 2, 'time_per_book': 1.1},
-        {'name': 'Book 8', 'selling_price': 40.0, 'material_cost': 15.0, 'min_books': 10, 'max_books': 100, 'machine': 3, 'time_per_book': 1.3},
-        {'name': 'Book 9', 'selling_price': 22.0, 'material_cost': 6.5, 'min_books': 15, 'max_books': 150, 'machine': 0, 'time_per_book': 0.9},
-        {'name': 'Book 10', 'selling_price': 45.0, 'material_cost': 20.0, 'min_books': 8, 'max_books': 80, 'machine': 1, 'time_per_book': 2.0},
-    ]
+        # Fetch all books from the database
 
+    cursor.execute("""
+    SELECT
+        b.book_id as id,
+        b.name as book_name,
+        b.selling_price,
+        cast(sum(m.cost_per_piece*bm.material_quantity) as decimal(10,2)) as total_material_cost,
+        ppb.book_amount_min,
+        sum(bh.production_time_in_hours) as total_prod_time_in_hours
+    FROM books b
+    LEFT JOIN book_materials bm ON b.book_id = bm.book_id
+    LEFT JOIN materials m ON bm.material_id =m.material_id
+    LEFT JOIN production_plan_books ppb ON b.book_id = ppb.book_id
+    LEFT JOIN production_plan pp ON ppb.production_plan_id = pp.production_plan_id
+    LEFT JOIN book_hardwares bh ON b.book_id =bh.book_id
+    LEFT JOIN hardwares h ON bh.hardware_id = h.hardware_id
+    WHERE pp.production_plan_id = 1
+    GROUP BY b.book_id,b.name,b.selling_price,ppb.book_amount_min,bh.production_time_in_hours
+    order by b.name""")
+
+
+    books_list = cursor.fetchall()
+    # You can now pass these data to your template or further processing
+    books = []
+#     Name
+#     Total income(count)
+#     Min books quantity
+#     Max books quantity (not in database)
+
+    for book in books_list:
+        books.append({
+        'book_id': book[0] if book[0] is not None else 'N/A',
+        'name': book[1] if book[1] is not None else 'Unnamed',
+        'selling_price': book[2] if book[2] is not None else Decimal('0.0'),
+        'material_cost': book[3] if book[3] is not None else Decimal('0.0'),
+        'min_books': book[4] if book[4] is not None else 0,
+        'max_books': 100,  # Hardcoded value
+        'time_per_book': book[5] if book[5] is not None else Decimal('0.0'),
+        'machine' : random.randint(0, 3)
+    })
+    print(books)
     machines = [
-        {'name': 'Machine 1', 'id': 0},
-        {'name': 'Machine 2', 'id': 1},
-        {'name': 'Machine 3', 'id': 2},
-        {'name': 'Machine 4', 'id': 3},
+            {'name': 'Machine 1', 'id': 0},
+            {'name': 'Machine 2', 'id': 1},
+            {'name': 'Machine 3', 'id': 2},
+            {'name': 'Machine 4', 'id': 3},
     ]
-
-    # Рассчитываем минимальный бюджет тут, хотя можно и без отдельной функции
-    min_budget = calculate_min_budget(books)
-    max_budget = sum(book['material_cost'] * book['max_books'] for book in books)
+    # Count minimal budget here (can be without separate function)
+    min_budget = sum(book['material_cost'] * book['min_books'] for book in books)
+    min_time = math.ceil(sum(book['time_per_book'] * book['min_books'] for book in books)/8)
     
     if request.method == 'POST':
         budget = float(request.form['budget'])
         total_days = int(request.form['total_days'])
 
-        result = optimize.optimize_production(books, machines, total_days, budget)# Логика оптимизации здесь, из того файла второго
+        result = optimize.optimize_production(books, machines, total_days, budget)# Logic of optimization
 
         return render_template('result.html', result=result, books=books)
 
-    return render_template('optimize_books.html', books=books, min_budget=min_budget, max_budget=max_budget)
+    return render_template('optimize_books.html', books=books, min_budget=min_budget, min_time=min_time)
 
 
+@app.route('/books', methods=['GET'])
+# Name
+# Selling price
+# Total Time of printing
+#
+# Material total cost
+# Material needed + quantity
+def books():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    cursor = mysql.connection.cursor()
+
+    # Fetch all books from the database
+    cursor.execute("SELECT b.book_id, b.name, b.selling_price, SUM(bh.production_time_in_hours), SUM(m.cost_per_piece * bm.material_quantity) AS total_material_cost FROM books b LEFT JOIN book_hardwares bh ON b.book_id = bh.book_id LEFT JOIN book_materials bm ON b.book_id = bm.book_id LEFT JOIN materials m ON bm.material_id = m.material_id GROUP BY b.book_id, b.name, b.selling_price;")
+    books_list = cursor.fetchall()
+    # You can now pass these data to your template or further processing
+    books = []
+    for book in books_list:
+        books.append({
+            'id': book[0] if book[0] is not None else 0,  # Default value is 0 if None
+            'name': book[1] if book[1] is not None else 'Unknown',  # Default value is 'Unknown' if None
+            'selling_price': book[2] if book[2] is not None else 0.0,  # Default value is 0.0 if None
+            'production_time': book[3] if book[3] is not None else 0.0,  # Default value is 0.0 if None
+            'total_material_cost': book[4] if book[4] is not None else 0.0  # Default value is 0.0 if None
+        })
+
+    return render_template('books.html', books=books)
+
+@app.route('/edit_book/<book_id>', methods=['GET', 'POST'])
+def edit_book(book_id):
+    cursor = mysql.connection.cursor()
+
+    # if POST, update
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        selling_price = request.form['selling_price']
 
 
+        cursor.execute("""
+            UPDATE books
+            SET  name = %s, description = %s, selling_price = %s
+            WHERE book_id = %s;
+        """, (name, description,selling_price, book_id))
+
+        mysql.connection.commit()
+        cursor.close()
+        return redirect(url_for('books'))
+
+    # if GET show existing data
+    cursor.execute("""SELECT
+                      b.book_id, b.name, b.description, b.selling_price
+                      FROM books b
+                      where b.book_id = %s""", (book_id,))
+    books_list1 = cursor.fetchall()
+    print(books_list1, book_id)
+         # You can now pass these data to your template or further processing
+    books1 = []
+    for book in books_list1:
+
+        books1.append({
+            'id': book[0],
+            'name': book[1],
+            'description': book[2],
+            'selling_price': book[3]
+        })
+   # cursor.close()
+    print(books1, book_id)
+    return render_template('edit_book.html', book=books1[0])
+
+@app.route('/delete_book/<book_id>', methods=['GET'])
+def delete_book(book_id):
+    cursor = mysql.connection.cursor()
+
+    # Delete the book from the database
+    cursor.execute("DELETE FROM books WHERE book_id = %s", (book_id,))
+    mysql.connection.commit()
+
+    cursor.close()
+
+    # Redirect to the book list page after deletion
+    return redirect(url_for('books'))
 if __name__ == '__main__':
     app.run(debug=True)
+    app.run(port=7295)  # Change the port here (e.g., 8080)
