@@ -26,7 +26,7 @@
                         <td>{{ book.max_books }}</td>
                         <td>
                             <div class = "nav-buttons">
-                                <a href="{{ url_for('edit_book', book_id=book.id) }}" class="btn edit-btn">
+                                <a href="{{ url_for('edit_opt_param', book_id=book.book_id, production_plan_id=1) }}" class="btn edit-btn">
                                     <i class="fas fa-edit"></i>
                                 </a>
                             </div>

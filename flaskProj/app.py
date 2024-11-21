@@ -95,6 +95,7 @@ def optimize_books():
         b.selling_price,
         cast(sum(m.cost_per_piece*bm.material_quantity) as decimal(10,2)) as total_material_cost,
         ppb.book_amount_min,
+        ppb.book_amount_max,
         sum(bh.production_time_in_hours) as total_prod_time_in_hours
     FROM books b
     LEFT JOIN book_materials bm ON b.book_id = bm.book_id
@@ -104,7 +105,7 @@ def optimize_books():
     LEFT JOIN book_hardwares bh ON b.book_id =bh.book_id
     LEFT JOIN hardwares h ON bh.hardware_id = h.hardware_id
     WHERE pp.production_plan_id = 1
-    GROUP BY b.book_id,b.name,b.selling_price,ppb.book_amount_min,bh.production_time_in_hours
+    GROUP BY b.book_id,b.name,b.selling_price,ppb.book_amount_min,ppb.book_amount_max,bh.production_time_in_hours
     order by b.name""")
 
 
@@ -123,8 +124,8 @@ def optimize_books():
         'selling_price': book[2] if book[2] is not None else Decimal('0.0'),
         'material_cost': book[3] if book[3] is not None else Decimal('0.0'),
         'min_books': book[4] if book[4] is not None else 0,
-        'max_books': 100,  # Hardcoded value
-        'time_per_book': book[5] if book[5] is not None else Decimal('0.0'),
+        'max_books': book[5] if book[5] is not None else Decimal('1000.0'),
+        'time_per_book': book[6] if book[6] is not None else Decimal('0.0'),
         'machine' : random.randint(0, 3)
     })
     print(books)
@@ -219,6 +220,49 @@ def edit_book(book_id):
     print(books1, book_id)
     return render_template('edit_book.html', book=books1[0])
 
+@app.route('/edit_opt_param/<book_id>/<production_plan_id>', methods=['GET', 'POST'])
+def edit_opt_param(book_id,production_plan_id):
+    cursor = mysql.connection.cursor()
+
+    # if POST, update
+    if request.method == 'POST':
+        min_books = request.form['min_books']
+        max_books = request.form['max_books']
+
+
+        cursor.execute("""
+            UPDATE production_plan_books
+            SET  book_amount_min = %s, book_amount_max = %s
+            WHERE book_id = %s and production_plan_id = %s;
+        """, (min_books,max_books, book_id, production_plan_id))
+
+        mysql.connection.commit()
+        cursor.close()
+        return redirect(url_for('optimize_books'))
+
+    # if GET show existing data
+    cursor.execute("""SELECT
+                      b.book_id, b.name, ppb.book_amount_min, ppb.book_amount_max, ppb.production_plan_id
+                      FROM production_plan_books ppb
+                      LEFT JOIN books b ON b.book_id = ppb.book_id
+                      where ppb.book_id = %s and ppb.production_plan_id = %s""", (book_id,production_plan_id,))
+    books_list1 = cursor.fetchall()
+    print(books_list1, book_id)
+         # You can now pass these data to your template or further processing
+    books1 = []
+    for book in books_list1:
+
+        books1.append({
+            'id': book[0],
+            'name': book[1],
+            'min_books': book[2],
+            'max_books': book[3],
+            'production_plan_id': book[4]
+        })
+   # cursor.close()
+    print(books1, book_id)
+    return render_template('edit_opt_param.html', book=books1[0])
+
 @app.route('/delete_book/<book_id>', methods=['GET'])
 def delete_book(book_id):
     cursor = mysql.connection.cursor()
@@ -226,7 +270,6 @@ def delete_book(book_id):
     # Delete the book from the database
     cursor.execute("DELETE FROM books WHERE book_id = %s", (book_id,))
     mysql.connection.commit()
-
     cursor.close()
 
     # Redirect to the book list page after deletion

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Book</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_edit.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <a href="{{ url_for('optimize_books') }}">
+        <button type="button">
+            <i class="fas fa-arrow-left fa-1.5x"></i>
+        </button>
+    </a>
+    <h2>Edit Book Optimization parameters</h2>
+    <form method="POST">
+        <label for="name">Name:</label>
+        <span id="name">{{ book.name }}</span>
+
+        <label for="production_plan_id">Production plan id:</label>
+        <span id="production_plan_id">{{ book.production_plan_id }}</span>
+
+        <label for="min_books">Minimal :</label>
+        <input type="number" name="min_books" id="min_books" value="{{ book.min_books }}" required>
+
+        <label for="max_books">Maximal :</label>
+        <input type="number" name="max_books" id="max_books" value="{{ book.max_books }}" required>
+
+        <button type="submit">Save Changes</button>
+
+    </form>
+</div>
+</body>
+</html>

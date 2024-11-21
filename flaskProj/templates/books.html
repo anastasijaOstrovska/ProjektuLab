@@ -33,9 +33,14 @@
                         <a href="{{ url_for('edit_book', book_id=book.id) }}" class="btn edit-btn">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a href="{{ url_for('delete_book', book_id=book.id) }}" class="btn delete-btn">
+                        <a href="{{ url_for('delete_book', book_id=book.id) }}" class="btn delete-btn" onclick="return confirmDelete('{{ book.name }}')">
                             <i class="fas fa-trash-alt"></i>
                         </a>
+                        <script>
+                            function confirmDelete(bookName ) {
+                                return confirm("Are you sure you want to delete "+  bookName +"?");
+                            }
+                        </script>
                     </div>
 
                 </td>
@@ -43,7 +48,6 @@
             {% endfor %}
             </tbody>
         </table>
-
     </form>
 </div>
 
