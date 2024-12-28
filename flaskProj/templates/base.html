@@ -8,16 +8,41 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>{% block title %}BobERP{% endblock %}</title>
 
+    <style>
+        .home-btn {
+            background-color: #2e5aa3;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 35px;
+            height: 35px;
+            border: none;
+        }
+
+        .home-btn:hover {
+            background-color: #1c3c73;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+
 </head>
 <body>
 <header>
     <nav class="navbar">
         <div class="containerMenu">
-
             <div class="nav-buttons">
-
-                <a href="{{ url_for('books') }}" class="nav-btn">Books</a>
-                <a href="{{ url_for('optimize_books') }}" class="nav-btn">Optimization</a>
+                <a href="{{ url_for('main') }}" class="btn home-btn">
+                    <i class="fas fa-home"></i>
+                </a>
             </div>
         </div>
     </nav>

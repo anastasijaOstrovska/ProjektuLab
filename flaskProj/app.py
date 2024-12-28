@@ -7,9 +7,21 @@ import optimize
 import random
 from decimal import Decimal
 import math
+from functools import wraps
+from datetime import timedelta
+from flask_session import Session
 
 app = Flask(__name__)
-load_dotenv('/var/www/ProjektuLab/flaskProj/pswd.env') #,verbose=True
+load_dotenv('/var/www/ProjektuLab/flaskProj/pswd.env')
+
+# Настройки сессии
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
+app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'flask_session')  # Папка для хранения сессий
+app.secret_key = os.getenv('APP_SECRET_KEY')
+
+# Инициализация Flask-Session
+Session(app)
 
 # Database connection
 app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST') 
@@ -21,9 +33,24 @@ app.secret_key = os.getenv('APP_SECRET_KEY')
 
 mysql = MySQL(app)
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
 def home():
+    if 'username' in session:
+        return redirect(url_for('main'))
     return render_template('home.html')
+
+@app.route('/main')
+@login_required
+def main():
+    return render_template('main.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -40,10 +67,11 @@ def register():
         hashed_password = generate_password_hash(password)
         cursor = mysql.connection.cursor()
         try:
-#	    cursor.execute("INSERT INTO users (username, password, production_id) VALUES (%s, %s, %i)", (username, hashed_password, 1))
             cursor.execute("INSERT INTO users (username, password, production_id) VALUES (%s, %s, %s)", (username, hashed_password, 1))
             mysql.connection.commit()
-            return redirect(url_for('login'))
+            session['username'] = username  # Добавляем пользователя в сессию
+            session.permanent = True
+            return redirect(url_for('main'))  # Перенаправляем на main
         except Exception as e:
             return f"Error occurred: {str(e)}"
         finally:
@@ -55,15 +83,23 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+
         cursor = mysql.connection.cursor()
         cursor.execute("SELECT password FROM users WHERE username = %s", (username,))
         result = cursor.fetchone()
 
         if result and check_password_hash(result[0], password):
+            session.clear()
             session['username'] = username
-            return redirect(url_for('optimize_books'))
+            session.permanent = True
+            return redirect(url_for('main'))  # Изменено с optimize_books на main
         return 'Invalid username or password.'
     return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 def calculate_min_budget(books):
     """
@@ -80,9 +116,9 @@ def calculate_days_needed(books, is_max):
     return total_time / 8  # Transpose into days (8 working hours)
 
 @app.route('/optimize_books', methods=['GET', 'POST'])
+@login_required
 def optimize_books():
-    if 'username' not in session:
-        return redirect(url_for('login'))
+    print("Current session:", session)
     cursor = mysql.connection.cursor()
 
         # Fetch all books from the database
@@ -94,7 +130,6 @@ def optimize_books():
         b.selling_price,
         cast(sum(m.cost_per_piece*bm.material_quantity) as decimal(10,2)) as total_material_cost,
         ppb.book_amount_min,
-        ppb.book_amount_max,
         sum(bh.production_time_in_hours) as total_prod_time_in_hours
     FROM books b
     LEFT JOIN book_materials bm ON b.book_id = bm.book_id
@@ -104,7 +139,7 @@ def optimize_books():
     LEFT JOIN book_hardwares bh ON b.book_id =bh.book_id
     LEFT JOIN hardwares h ON bh.hardware_id = h.hardware_id
     WHERE pp.production_plan_id = 1
-    GROUP BY b.book_id,b.name,b.selling_price,ppb.book_amount_min,ppb.book_amount_max,bh.production_time_in_hours
+    GROUP BY b.book_id,b.name,b.selling_price,ppb.book_amount_min,bh.production_time_in_hours
     order by b.name""")
 
 
@@ -123,8 +158,8 @@ def optimize_books():
         'selling_price': book[2] if book[2] is not None else Decimal('0.0'),
         'material_cost': book[3] if book[3] is not None else Decimal('0.0'),
         'min_books': book[4] if book[4] is not None else 0,
-        'max_books': book[5] if book[5] is not None else Decimal('1000.0'),
-        'time_per_book': book[6] if book[6] is not None else Decimal('0.0'),
+        'max_books': 100,  # Hardcoded value
+        'time_per_book': book[5] if book[5] is not None else Decimal('0.0'),
         'machine' : random.randint(0, 3)
     })
     print(books)
@@ -150,15 +185,8 @@ def optimize_books():
 
 
 @app.route('/books', methods=['GET'])
-# Name
-# Selling price
-# Total Time of printing
-#
-# Material total cost
-# Material needed + quantity
+@login_required
 def books():
-    if 'username' not in session:
-        return redirect(url_for('login'))
     cursor = mysql.connection.cursor()
 
     # Fetch all books from the database
@@ -178,6 +206,7 @@ def books():
     return render_template('books.html', books=books)
 
 @app.route('/edit_book/<book_id>', methods=['GET', 'POST'])
+@login_required
 def edit_book(book_id):
     cursor = mysql.connection.cursor()
 
@@ -219,60 +248,135 @@ def edit_book(book_id):
     print(books1, book_id)
     return render_template('edit_book.html', book=books1[0])
 
-@app.route('/edit_opt_param/<book_id>/<production_plan_id>', methods=['GET', 'POST'])
-def edit_opt_param(book_id,production_plan_id):
-    cursor = mysql.connection.cursor()
-
-    # if POST, update
-    if request.method == 'POST':
-        min_books = request.form['min_books']
-        max_books = request.form['max_books']
-
-
-        cursor.execute("""
-            UPDATE production_plan_books
-            SET  book_amount_min = %s, book_amount_max = %s
-            WHERE book_id = %s and production_plan_id = %s;
-        """, (min_books,max_books, book_id, production_plan_id))
-
-        mysql.connection.commit()
-        cursor.close()
-        return redirect(url_for('optimize_books'))
-
-    # if GET show existing data
-    cursor.execute("""SELECT
-                      b.book_id, b.name, ppb.book_amount_min, ppb.book_amount_max, ppb.production_plan_id
-                      FROM production_plan_books ppb
-                      LEFT JOIN books b ON b.book_id = ppb.book_id
-                      where ppb.book_id = %s and ppb.production_plan_id = %s""", (book_id,production_plan_id,))
-    books_list1 = cursor.fetchall()
-    print(books_list1, book_id)
-         # You can now pass these data to your template or further processing
-    books1 = []
-    for book in books_list1:
-
-        books1.append({
-            'id': book[0],
-            'name': book[1],
-            'min_books': book[2],
-            'max_books': book[3],
-            'production_plan_id': book[4]
-        })
-   # cursor.close()
-    print(books1, book_id)
-    return render_template('edit_opt_param.html', book=books1[0])
-
 @app.route('/delete_book/<book_id>', methods=['GET'])
+@login_required
 def delete_book(book_id):
     cursor = mysql.connection.cursor()
 
     # Delete the book from the database
     cursor.execute("DELETE FROM books WHERE book_id = %s", (book_id,))
     mysql.connection.commit()
+
     cursor.close()
 
     # Redirect to the book list page after deletion
     return redirect(url_for('books'))
+
+@app.before_request
+def session_handler():
+    session.permanent = True  # Делаем сессию постоянной
+    app.permanent_session_lifetime = timedelta(minutes=10)  # Устанавливаем время жизни
+
+@app.route('/materials')
+@login_required
+def materials():
+    cursor = mysql.connection.cursor()
+    
+    # Получаем список всех материалов с правильными полями из базы
+    cursor.execute("""
+        SELECT 
+            material_id,
+            name,
+            quantity,
+            cost_per_piece,
+            type
+        FROM materials
+        ORDER BY name
+    """)
+    
+    materials_list = cursor.fetchall()
+    materials = []
+    
+    for material in materials_list:
+        materials.append({
+            'id': material[0],
+            'name': material[1],
+            'quantity': material[2],
+            'cost': material[3],
+            'type': material[4]
+        })
+        
+    cursor.close()
+    return render_template('materials.html', materials=materials)
+
+@app.route('/employees')
+@login_required
+def employees():
+    cursor = mysql.connection.cursor()
+    
+    cursor.execute("""
+        SELECT 
+            employee_id,
+            name,
+            surname,
+            personal_code,
+            phone_number,
+            email,
+            user_id
+        FROM employees
+        ORDER BY surname, name
+    """)
+    
+    employees_list = cursor.fetchall()
+    employees = []
+    
+    for employee in employees_list:
+        employees.append({
+            'id': employee[0],
+            'name': employee[1],
+            'surname': employee[2],
+            'personal_code': employee[3],
+            'phone': employee[4],
+            'email': employee[5],
+            'user_id': employee[6]
+        })
+        
+    cursor.close()
+    return render_template('employees.html', employees=employees)
+
+@app.route('/machines')
+@login_required
+def machines():
+    cursor = mysql.connection.cursor()
+    
+    cursor.execute("""
+        SELECT 
+            hardware_id,
+            name,
+            type,
+            capacity
+        FROM hardwares
+        ORDER BY name
+    """)
+    
+    machines_list = cursor.fetchall()
+    machines = []
+    
+    for machine in machines_list:
+        machines.append({
+            'id': machine[0],
+            'name': machine[1],
+            'type': machine[2],
+            'capacity': machine[3]
+        })
+        
+    cursor.close()
+    return render_template('machines.html', machines=machines)
+
 if __name__ == '__main__':
-    app.run(debug=True)
-    app.run(port=7295)  # Change the port here (e.g., 8080)
+    # Очищаем сессии при запуске
+    session_dir = app.config['SESSION_FILE_DIR']
+    if os.path.exists(session_dir):
+        for f in os.listdir(session_dir):
+            file_path = os.path.join(session_dir, f)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                print(f'Error deleting session file: {e}')
+    
+    # Создаем директорию для сессий, если её нет
+    os.makedirs(session_dir, exist_ok=True)
+    
+    app.run(port=8080, debug=True)
+    

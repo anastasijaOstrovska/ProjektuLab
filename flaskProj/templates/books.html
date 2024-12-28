@@ -1,13 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Optimize Book Productio{% endblock %}
+{% block title %}Books List{% endblock %}
 
 {% block content %}
-<!--id': book[0],-->
-<!--'name': book[1],-->
-<!--'selling_price': book[2],-->
-<!--'production_time': book[3],-->
-<!--'total_material_cost': book[4]-->
 <div class="container">
     <form class="book-form" method="POST">
         <h2>Books Information</h2>
@@ -29,20 +24,14 @@
                 <td>{{ book.production_time }}</td>
                 <td>{{ book.total_material_cost }}</td>
                 <td>
-                    <div class = "nav-buttons">
+                    <div class="nav-buttons">
                         <a href="{{ url_for('edit_book', book_id=book.id) }}" class="btn edit-btn">
                             <i class="fas fa-edit"></i>
                         </a>
                         <a href="{{ url_for('delete_book', book_id=book.id) }}" class="btn delete-btn" onclick="return confirmDelete('{{ book.name }}')">
                             <i class="fas fa-trash-alt"></i>
                         </a>
-                        <script>
-                            function confirmDelete(bookName ) {
-                                return confirm("Are you sure you want to delete "+  bookName +"?");
-                            }
-                        </script>
                     </div>
-
                 </td>
             </tr>
             {% endfor %}
@@ -51,5 +40,41 @@
     </form>
 </div>
 
+<script>
+    function confirmDelete(bookName) {
+        return confirm("Are you sure you want to delete " + bookName + "?");
+    }
+</script>
 
+<style>
+    .btn {
+        padding: 8px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 35px;
+        height: 35px;
+        border: none;
+    }
+
+    .edit-btn {
+        background-color: #4CAF50;
+        color: white;
+    }
+
+    .edit-btn:hover {
+        background-color: #45a049;
+    }
+
+    .delete-btn {
+        background-color: #f44336;
+        color: white;
+    }
+
+    .delete-btn:hover {
+        background-color: #da190b;
+    }
+</style>
 {% endblock %}
