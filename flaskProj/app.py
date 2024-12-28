@@ -9,7 +9,7 @@ from decimal import Decimal
 import math
 
 app = Flask(__name__)
-load_dotenv('pswd.env')
+load_dotenv('/var/www/ProjektuLab/flaskProj/pswd.env') #,verbose=True
 
 # Database connection
 app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST') 
@@ -55,7 +55,6 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
         cursor = mysql.connection.cursor()
         cursor.execute("SELECT password FROM users WHERE username = %s", (username,))
         result = cursor.fetchone()
