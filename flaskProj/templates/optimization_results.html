@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Optimization Results{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Optimization Results</h2>
+    
+    <h3>Production Quantities</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Book Name</th>
+                <th>Quantity to Produce</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book, quantity in quantities.items() %}
+            <tr>
+                <td>{{ book }}</td>
+                <td>{{ quantity }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Financial Summary</h3>
+    <p>Total Books to Produce: {{ total_books }}</p>
+    <p>Gross Income: ${{ "%.2f"|format(gross_income) }}</p>
+    <p>Net Income: ${{ "%.2f"|format(net_income) }}</p>
+
+    <h3>Machine Utilization</h3>
+    {% for machine_id, stats in machine_stats.items() %}
+    <div class="machine-stats">
+        <h4>Machine {{ machine_id }}</h4>
+        <p>Total Time Worked: {{ "%.2f"|format(stats.time_worked / 60) }} hours</p>
+        <h5>Task Order:</h5>
+        <ul>
+            {% for task in stats.task_order %}
+            <li>{{ task }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+
+    <a href="{{ url_for('optimize_books') }}" class="btn">Back to Optimization</a>
+</div>
+
+<style>
+    .container {
+        padding: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+    }
+
+    th, td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #2e5aa3;
+        color: white;
+    }
+
+    .machine-stats {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #2e5aa3;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+
+    .btn:hover {
+        background-color: #1c3c73;
+    }
+</style>
+{% endblock %} 
