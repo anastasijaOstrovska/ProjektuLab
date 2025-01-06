@@ -248,9 +248,13 @@
             <i class="fas fa-laptop"></i>
             <span>Machines</span>
         </a>
+        <a href="{{ url_for('optimize_books') }}" class="sidebar-link" onclick="activateLink(event)">
+            <i class="fas fa-chart-line"></i>
+            <span>Optimization</span>
+        </a>
 
         <!-- Настраиваем разделитель -->
-        <div style="flex-grow: 0.95;"></div>
+        <div style="flex-grow: 0.90;"></div>
 
         <!-- Кнопка logout -->
         <a href="{{ url_for('logout') }}" class="sidebar-link logout-link" onclick="activateLink(event)">

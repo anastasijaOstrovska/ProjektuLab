@@ -3,6 +3,8 @@ flaskProj/__pycache__/
 
 flaskProj/flask-venv/
 
+flaskProj/flask_session/
+
 *.env
 
 *.log
