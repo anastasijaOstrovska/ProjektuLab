@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Create Material{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>Create New Material</h1>
+    </div>
+
+    <div class="content">
+        <div class="form-wrapper">
+            <form method="POST" class="standard-form">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" id="quantity" name="quantity" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cost_per_piece">Cost per Piece ($):</label>
+                    <input type="number" step="0.01" id="cost_per_piece" name="cost_per_piece" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="type">Type:</label>
+                    <input type="text" id="type" name="type" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Create Material</button>
+                    <a href="{{ url_for('materials') }}" class="btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

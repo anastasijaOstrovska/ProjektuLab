@@ -7,12 +7,17 @@ import optimize
 import random
 from decimal import Decimal
 import math
+import heapq
 from functools import wraps
 from datetime import timedelta
 from flask_session import Session
+from optimize_parallel_test import optimize_production_with_dependencies
+from collections import defaultdict
+
+
 
 app = Flask(__name__)
-load_dotenv('/var/www/ProjektuLab/flaskProj/pswd.env')
+load_dotenv('C:/Users/Edward/Desktop/projectLab/ProjektuLab/flaskProj/pswd.env')
 
 # Настройки сессии
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -105,7 +110,11 @@ def calculate_min_budget(books):
     """
     Count minimal budget as sum of minimal quantity of books * cost of production of every book
     """
-    min_budget = sum(book['min_books'] * book['material_cost'] for book in books)
+    min_budget = sum(
+        (book['material_cost'] if book['material_cost'] is not None else Decimal(0)) * 
+        (book['min_books'] if book['min_books'] is not None else 0) 
+        for book in books
+    )
     return min_budget
 
 def calculate_days_needed(books, is_max):
@@ -117,96 +126,146 @@ def calculate_days_needed(books, is_max):
 
 @app.route('/optimize_books', methods=['GET', 'POST'])
 @login_required
+
+
 def optimize_books():
-    print("Current session:", session)
     cursor = mysql.connection.cursor()
 
-        # Fetch all books from the database
+    try:
+        # Получаем бюджет и общее время из формы
+        budget = float(request.form.get('budget', 0))
+        total_days = int(request.form.get('total_days', 0))
+        total_time_available = total_days * 8 * 60  # Преобразуем дни в минуты (например, 8-часовой рабочий день)
 
-    cursor.execute("""
-    SELECT
-        b.book_id as id,
-        b.name as book_name,
-        b.selling_price,
-        cast(sum(m.cost_per_piece*bm.material_quantity) as decimal(10,2)) as total_material_cost,
-        ppb.book_amount_min,
-        sum(bh.production_time_in_hours) as total_prod_time_in_hours
-    FROM books b
-    LEFT JOIN book_materials bm ON b.book_id = bm.book_id
-    LEFT JOIN materials m ON bm.material_id =m.material_id
-    LEFT JOIN production_plan_books ppb ON b.book_id = ppb.book_id
-    LEFT JOIN production_plan pp ON ppb.production_plan_id = pp.production_plan_id
-    LEFT JOIN book_hardwares bh ON b.book_id =bh.book_id
-    LEFT JOIN hardwares h ON bh.hardware_id = h.hardware_id
-    WHERE pp.production_plan_id = 1
-    GROUP BY b.book_id,b.name,b.selling_price,ppb.book_amount_min,bh.production_time_in_hours
-    order by b.name""")
+        # Fetch necessary data from the database
+        cursor.execute("SELECT book_id, selling_price FROM books")
+        books = cursor.fetchall()
 
+        # Преобразуем кортежи в словари
+        books = [
+            {
+                'book_id': book[0],
+                'selling_price': book[1]
+            }
+            for book in books
+        ]
 
-    books_list = cursor.fetchall()
-    # You can now pass these data to your template or further processing
-    books = []
-#     Name
-#     Total income(count)
-#     Min books quantity
-#     Max books quantity (not in database)
+        cursor.execute("SELECT hardware_id, capacity FROM hardwares")
+        hardwares = cursor.fetchall()
 
-    for book in books_list:
-        books.append({
-        'book_id': book[0] if book[0] is not None else 'N/A',
-        'name': book[1] if book[1] is not None else 'Unnamed',
-        'selling_price': book[2] if book[2] is not None else Decimal('0.0'),
-        'material_cost': book[3] if book[3] is not None else Decimal('0.0'),
-        'min_books': book[4] if book[4] is not None else 0,
-        'max_books': 100,  # Hardcoded value
-        'time_per_book': book[5] if book[5] is not None else Decimal('0.0'),
-        'machine' : random.randint(0, 3)
-    })
-    cursor.close()
-    print(books)
-#     machines = [
-#             {'name': 'Machine 1', 'id': 0},
-#             {'name': 'Machine 2', 'id': 1},
-#             {'name': 'Machine 3', 'id': 2},
-#             {'name': 'Machine 4', 'id': 3},
-#     ]
-    cursor = mysql.connection.cursor()
+        cursor.execute(
+            "SELECT book_id, hardware_id, production_time_in_hours, order_in_queue "
+            "FROM book_hardwares ORDER BY order_in_queue"
+        )
+        book_hardwares = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT
-            hardware_id,
-            name,
-            type,
-            capacity
-        FROM hardwares
-        ORDER BY name
-    """)
+        # Prepare data structures
+        book_prices = {book['book_id']: book['selling_price'] for book in books}
+        hardware_capacity = {hw[0]: hw[1] for hw in hardwares}
+        hardware_usage = defaultdict(list)  # To track hardware usage
 
-    machines_list = cursor.fetchall()
-    machines = []
+        # Organize book-hardware mappings
+        book_to_hardwares = defaultdict(list)
+        for bh in book_hardwares:
+            book_to_hardwares[bh[0]].append({
+                'hardware_id': bh[1],
+                'production_time': bh[2],
+                'order': bh[3]
+            })
 
-    for machine in machines_list:
-        machines.append({
-            'id': machine[0],
-            'name': machine[1],
-            'type': machine[2],
-            'capacity': machine[3]
-        })
+        # Priority queue to simulate parallel machine operation
+        hardware_queue = [(0, hw_id) for hw_id in hardware_capacity.keys()]  # (end_time, hardware_id)
+        heapq.heapify(hardware_queue)
 
-    cursor.close()
-    # Count minimal budget here (can be without separate function)
-    min_budget = sum(book['material_cost'] * book['min_books'] for book in books)
-    min_time = math.ceil(sum(book['time_per_book'] * book['min_books'] for book in books)/8)
-    
-    if request.method == 'POST':
-        budget = float(request.form['budget'])
-        total_days = int(request.form['total_days'])
+        total_profit = 0
+        total_production_time = 0  # Общее время производства
+        production_log = []
 
-        result = optimize.optimize_production(books, machines, total_days, budget)# Logic of optimization
+        for book_id, hardwares in book_to_hardwares.items():
+            hardwares = sorted(hardwares, key=lambda x: x['order'])
+            book_start_time = 0
 
-        return render_template('result.html', result=result, books=books)
+            for hw in hardwares:
+                hw_id = hw['hardware_id']
+                production_time = hw['production_time']
 
-    return render_template('optimize_books.html', books=books, min_budget=min_budget, min_time=min_time)
+                # Find the next available time slot for the required hardware
+                while hardware_queue:
+                    end_time, current_hw_id = heapq.heappop(hardware_queue)
+                    if current_hw_id == hw_id:
+                        break
+
+                # Calculate start and end time for this hardware operation
+                start_time = max(book_start_time, end_time)
+                end_time = start_time + production_time
+
+                # Log the usage
+                hardware_usage[hw_id].append({
+                    'book_id': book_id,
+                    'start_time': start_time,
+                    'end_time': end_time
+                })
+
+                # Push the hardware back into the queue with its updated end time
+                heapq.heappush(hardware_queue, (end_time, hw_id))
+
+                # Update book_start_time for the next operation in sequence
+                book_start_time = end_time
+
+            # Calculate profit for this book
+            total_profit += book_prices.get(book_id, 0)  # Use .get() to avoid KeyError
+            production_log.append({
+                'book_id': book_id,
+                'profit': book_prices.get(book_id, 0)
+            })
+
+            # Обновляем общее время производства
+            total_production_time += sum(hw['production_time'] for hw in hardwares)
+
+        # Проверка на укладывание в бюджет и время
+        if total_profit > budget:
+            print("Превышен бюджет!")
+            return render_template('optimize_books.html', books=books, min_budget=0, min_time=0, error="Превышен бюджет!")
+
+        if total_production_time > total_time_available:
+            print("Превышено доступное время!")
+            return render_template('optimize_books.html', books=books, min_budget=0, min_time=0, error="Превышено доступное время!")
+
+        # Prepare output summary
+        hardware_summary = {
+            hw_id: [
+                {
+                    'book_id': log['book_id'],
+                    'start_time': log['start_time'],
+                    'end_time': log['end_time']
+                } for log in logs
+            ] for hw_id, logs in hardware_usage.items()
+        }
+
+        summary = {
+            'total_profit': total_profit,
+            'hardware_usage': hardware_summary,
+            'production_log': production_log
+        }
+
+        # Print the summary instead of returning
+        print("Total Profit:", summary['total_profit'])
+        print("\nHardware Usage:")
+        for hw_id, logs in hardware_summary.items():
+            print(f"Hardware {hw_id}:")
+            for log in logs:
+                print(f"  Book ID: {log['book_id']}, Start Time: {log['start_time']}, End Time: {log['end_time']}")
+        print("\nProduction Log:")
+        for log in production_log:
+            print(f"Book ID: {log['book_id']}, Profit: {log['profit']}")
+
+        return render_template('optimize_books.html', books=books, min_budget=0, min_time=0)
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return render_template('optimize_books.html', books=[], min_budget=0, min_time=0)  # Возвращаем пустой список книг в случае ошибки
+    finally:
+        cursor.close()  # Ensure the cursor is closed
 
 
 @app.route('/books', methods=['GET'])
@@ -446,6 +505,161 @@ def machines():
         
     cursor.close()
     return render_template('machines.html', machines=machines)
+
+@app.route('/create_material', methods=['GET', 'POST'])
+@login_required
+def create_material():
+    if request.method == 'POST':
+        name = request.form['name']
+        quantity = request.form['quantity']
+        cost_per_piece = request.form['cost_per_piece']
+        material_type = request.form['type']
+
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            INSERT INTO materials (name, quantity, cost_per_piece, type)
+            VALUES (%s, %s, %s, %s)
+        """, (name, quantity, cost_per_piece, material_type))
+        
+        mysql.connection.commit()
+        cursor.close()
+        return redirect(url_for('materials'))
+
+    return render_template('create_material.html')
+
+@app.route('/edit_material/<int:material_id>', methods=['GET', 'POST'])
+@login_required
+def edit_material(material_id):
+    cursor = mysql.connection.cursor()
+
+    if request.method == 'POST':
+        name = request.form['name']
+        quantity = request.form['quantity']
+        cost_per_piece = request.form['cost_per_piece']
+        material_type = request.form['type']
+
+        cursor.execute("""
+            UPDATE materials
+            SET name = %s, quantity = %s, cost_per_piece = %s, type = %s
+            WHERE material_id = %s
+        """, (name, quantity, cost_per_piece, material_type, material_id))
+
+        mysql.connection.commit()
+        cursor.close()
+        return redirect(url_for('materials'))
+
+    # Получаем данные материала для редактирования
+    cursor.execute("""
+        SELECT material_id, name, quantity, cost_per_piece, type
+        FROM materials
+        WHERE material_id = %s
+    """, (material_id,))
+    
+    material = cursor.fetchone()
+    cursor.close()
+
+    if material:
+        material_data = {
+            'id': material[0],
+            'name': material[1],
+            'quantity': material[2],
+            'cost': material[3],
+            'type': material[4]
+        }
+        return render_template('edit_material.html', material=material_data)
+    
+    return redirect(url_for('materials'))
+
+@app.route('/delete_material/<int:material_id>')
+@login_required
+def delete_material(material_id):
+    cursor = mysql.connection.cursor()
+    
+    # Проверяем, используется ли материал в книгах
+    cursor.execute("""
+        SELECT COUNT(*) FROM book_materials 
+        WHERE material_id = %s
+    """, (material_id,))
+    
+    if cursor.fetchone()[0] > 0:
+        cursor.close()
+        return "Cannot delete material as it is used in books", 400
+    
+    cursor.execute("DELETE FROM materials WHERE material_id = %s", (material_id,))
+    mysql.connection.commit()
+    cursor.close()
+    
+    return redirect(url_for('materials'))
+
+@app.route('/create_machine', methods=['GET', 'POST'])
+@login_required
+def create_machine():
+    if request.method == 'POST':
+        name = request.form['name']
+        machine_type = request.form['type']
+        capacity = request.form['capacity']
+
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            INSERT INTO hardwares (name, type, capacity)
+            VALUES (%s, %s, %s)
+        """, (name, machine_type, capacity))
+        
+        mysql.connection.commit()
+        cursor.close()
+        return redirect(url_for('machines'))
+
+    return render_template('create_machine.html')
+
+@app.route('/edit_machine/<int:machine_id>', methods=['GET', 'POST'])
+@login_required
+def edit_machine(machine_id):
+    cursor = mysql.connection.cursor()
+
+    if request.method == 'POST':
+        name = request.form['name']
+        machine_type = request.form['type']
+        capacity = request.form['capacity']
+
+        cursor.execute("""
+            UPDATE hardwares
+            SET name = %s, type = %s, capacity = %s
+            WHERE hardware_id = %s
+        """, (name, machine_type, capacity, machine_id))
+
+        mysql.connection.commit()
+        cursor.close()
+        return redirect(url_for('machines'))
+
+    cursor.execute("""
+        SELECT hardware_id, name, type, capacity
+        FROM hardwares
+        WHERE hardware_id = %s
+    """, (machine_id,))
+    
+    machine = cursor.fetchone()
+    cursor.close()
+
+    if machine:
+        machine_data = {
+            'id': machine[0],
+            'name': machine[1],
+            'type': machine[2],
+            'capacity': machine[3]
+        }
+        return render_template('edit_machine.html', machine=machine_data)
+    
+    return redirect(url_for('machines'))
+
+@app.route('/delete_machine/<int:machine_id>', methods=['GET'])
+@login_required
+def delete_machine(machine_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute("DELETE FROM hardwares WHERE hardware_id = %s", (machine_id,))
+    mysql.connection.commit()
+    cursor.close()
+    
+    return redirect(url_for('machines'))
 
 if __name__ == '__main__':
     # Очищаем сессии при запуске

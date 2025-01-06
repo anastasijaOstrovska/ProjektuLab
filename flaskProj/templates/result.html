@@ -20,7 +20,6 @@
             padding: 20px;
         }
 
-        /* Header styles */
         header {
             background: #35424a;
             color: #ffffff;
@@ -34,10 +33,8 @@
             padding-bottom: 20px;
         }
 
-        /* Result styles */
         .result-container {
             background: #ffffff;
-            max-width: 600px;
             margin: 30px auto;
             padding: 20px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -47,19 +44,14 @@
             text-align: center;
             color: #35424a;
         }
-        .result-container ul {
+        ul {
             list-style-type: none;
             padding: 0;
         }
-        .result-container li {
+        li {
             margin-bottom: 10px;
         }
-        .statistics {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-        }
-        .machine-stats {
+        .statistics, .machine-stats {
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid #ddd;
@@ -77,37 +69,37 @@
         <div class="result-container">
             <h2>Book Production Plan</h2>
             <ul>
-                {% for book in books %}
-                <li><strong>{{ book.name }}:</strong> Produce {{ result.quantities[loop.index0] }} units</li>
+                {% for book_name, quantity in result['quantities'].items() %}
+                <li><strong>{{ book_name }}:</strong> Produce {{ quantity }} units</li>
                 {% endfor %}
             </ul>
 
             <div class="statistics">
                 <h2>Statistics</h2>
-                <p><strong>Total books produced:</strong> {{ result.total_books }}</p>
-                <p><strong>Gross income:</strong> ${{ result.gross_income }}</p>
-                <p><strong>Net income (after material costs):</strong> ${{ result.net_income }}</p>
+                <p><strong>Total books produced:</strong> {{ result['total_books'] }}</p>
+                <p><strong>Gross income:</strong> ${{ result['gross_income'] }}</p>
+                <p><strong>Net income (after material costs):</strong> ${{ result['net_income'] }}</p>
             </div>
 
-<!--            <div class="machine-stats">-->
-<!--                <h2>Machine Statistics</h2>-->
-<!--                <ul>-->
-<!--                    {% for machine in result.machine_stats %}-->
-<!--                    <li>-->
-<!--                        <strong>Machine {{ machine }}:</strong>-->
-<!--                        <ul>-->
-<!--                            <li>Total time worked: {{ result.machine_stats[machine]['time_worked'] / 60 }} hours</li>-->
-<!--                            <li>Books produced:</li>-->
-<!--                            <ul>-->
-<!--                                {% for book_name, count in result.machine_stats[machine]['produced_books'].items() %}-->
-<!--                                    <li>{{ book_name }}: {{ count }} units</li>-->
-<!--                                {% endfor %}-->
-<!--                            </ul>-->
-<!--                        </ul>-->
-<!--                    </li>-->
-<!--                    {% endfor %}-->
-<!--                </ul>-->
-<!--            </div>-->
+            <div class="machine-stats">
+                <h2>Machine Statistics</h2>
+                <ul>
+                    {% for machine_id, stats in result['machine_stats'].items() %}
+                    <li>
+                        <strong>Machine {{ machine_id }}:</strong>
+                        <ul>
+                            <li>Total time worked: {{ stats['time_worked'] / 60 }} hours</li>
+                            <li>Task order:</li>
+                            <ul>
+                                {% for task in stats['task_order'] %}
+                                <li>{{ task }}</li>
+                                {% endfor %}
+                            </ul>
+                        </ul>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
     </div>
 </body>
