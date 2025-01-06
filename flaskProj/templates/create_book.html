@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Book</title>
+    <link href="{{ url_for('static', filename='style_create.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <a href="{{ url_for('books') }}">
+        <button type="button">
+            <i class="fas fa-arrow-left fa-1.5x"></i>
+        </button>
+    </a>
+    <h2>Create Book</h2>
+    <form method="POST" onsubmit="return confirm('Are you sure you want to create this book?');">
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name" required>
+
+        <label for="description">Description:</label>
+        <textarea name="description" id="description" rows="3" style="resize: none;"></textarea>
+
+        <label for="selling_price">Selling Price:</label>
+        <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" name="selling_price" id="selling_price" required>
+        
+        <div class="header-container">
+            <h3>Materials</h3>
+            <button id="add-material-btn">Add Material</button>
+        </div>
+        
+        <div class="table-container">
+            <table id="materials-table">
+                <thead>
+                <tr>
+                    <th>Material Type</th>
+                    <th>Material Name</th>
+                    <th>Required Quantity</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <button type="submit">Create Book</button>
+    </form>
+</div>
+
+<script>
+    const materialOptions = {{ materials | tojson }};
+    const materialsTable = document.getElementById('materials-table').querySelector('tbody');
+    const addMaterialBtn = document.getElementById('add-material-btn');
+
+    addMaterialBtn.addEventListener('click', () => {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+            <td>
+                <select class="material-type" required>
+                    <option value="" disabled selected>Select Type</option>
+                    ${Object.keys(materialOptions).map(type => `<option value="${type}">${type}</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <select name="material_id[]" class="material-name" required disabled>
+                    <option value="" disabled selected>Select Material</option>
+                </select>
+            </td>
+            <td>
+                <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" name="quantity[]" required>
+            </td>
+            <td>
+                <button type="delete" class="delete-row-btn">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+
+        materialsTable.appendChild(row);
+
+        const materialTypeSelect = row.querySelector('.material-type');
+        const materialNameSelect = row.querySelector('.material-name');
+
+        materialTypeSelect.addEventListener('change', () => {
+            const selectedType = materialTypeSelect.value;
+            materialNameSelect.innerHTML = `
+                <option value="" disabled selected>Select Material</option>
+                ${materialOptions[selectedType].map(material => 
+                    `<option value="${material.id}">${material.name}</option>`
+                ).join('')}
+            `;
+            materialNameSelect.disabled = false;
+        });
+
+        row.querySelector('.delete-row-btn').addEventListener('click', () => {
+            materialsTable.removeChild(row);
+        });
+    });
+</script>
+
+</body>
+</html>

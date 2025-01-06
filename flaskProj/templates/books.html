@@ -3,9 +3,16 @@
 {% block title %}Books List{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="table-container">
     <form class="book-form" method="POST">
-        <h2>Books Information</h2>
+        <div class="header-container">
+            <h2>Books Information</h2>
+
+            <a href="{{ url_for('create_book') }}" class="create-btn">
+                <span>Add New Book</span>
+            </a>
+        </div>
+
         <table>
             <thead>
             <tr>
@@ -46,35 +53,5 @@
     }
 </script>
 
-<style>
-    .btn {
-        padding: 8px;
-        border-radius: 4px;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 35px;
-        height: 35px;
-        border: none;
-    }
 
-    .edit-btn {
-        background-color: #4CAF50;
-        color: white;
-    }
-
-    .edit-btn:hover {
-        background-color: #45a049;
-    }
-
-    .delete-btn {
-        background-color: #f44336;
-        color: white;
-    }
-
-    .delete-btn:hover {
-        background-color: #da190b;
-    }
-</style>
 {% endblock %}

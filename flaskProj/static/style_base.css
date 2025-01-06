@@ -1,67 +1,14 @@
-body {
-    font-family: Arial, sans-serif;
-    line-height: 1.6;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
-}
-.container {
-    width: 80%;
-    margin: auto;
-    overflow: hidden;
-    padding: 20px;
+:root {
+    --primary: #2e5aa3;
+    --primary-dark: #1c3c73;
+    --background: #f8fafc;
+    --text: #46515c;
+    --border: #e2e8f0;
+    --hover-light: #adc6e0;
+    --sidebar-width: 180px;
+    --sidebar-min-width: 60px;
 }
 
-/* Header styles */
-header {
-    background: #35424a;
-    color: #ffffff;
-    padding-top: 30px;
-    min-height: 70px;
-    border-bottom: #007bff 3px solid;
-}
-header h1 {
-    margin: 0;
-    text-align: center;
-    padding-bottom: 20px;
-}
-
-/* Book production form styles */
-.book-form {
-    background: #ffffff;
-    max-width: 600px;
-    margin: 30px auto;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    border-radius: 5px;
-}
-.book-form h2 {
-    text-align: center;
-    color: #35424a;
-}
-.book-form ul {
-    list-style-type: none;
-    padding: 0;
-}
-.book-form li {
-    margin-bottom: 10px;
-}
-.book-form button {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    background: #007bff;
-    color: #ffffff;
-    border: none;
-    cursor: pointer;
-    border-radius: 3px;
-}
-.book-form button:hover {
-    background: #0056b3;
-}
-.slider {
-    margin: 10px 0;
-}
 * {
     margin: 0;
     padding: 0;
@@ -69,28 +16,294 @@ header h1 {
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(45deg, #ffffff, #3a5978);
 }
 
-/* Navbar styles */
-.navbar {
-    background-color: #35424a;
-    padding: 15px 0;
+header {
+    background: white;
+    padding: 1rem 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-bottom: 2px solid var(--border);
+    width: 100%;
 }
 
-.containerMenu {
-    width: 80%;
+.container {
+    width: 90%;
+    max-width: 1200px;
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.navbar-brand {
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-info {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.main {
+    display: flex;
+    flex: 1;
+    height: 100%;
+}
+
+/* Sidebar styles */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--primary);
     color: white;
-    font-size: 1.5em;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    border-right: 2px solid var(--primary-dark);
+    height: 100vh;
+    position: fixed;
+    transition: width 0.3s ease;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-bottom: 20px;
+}
+
+.sidebar.closed {
+    width: var(--sidebar-min-width);
+}
+
+/* Hamburger button */
+.toggle-btn {
+    background: var(--primary-dark);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: left;
+    align-items: left;
+    margin-left: 10px;
+}
+
+.toggle-btn i {
+    font-size: 24px; /* Hamburger icon size */
+    margin-left: 0px; /* No margin for the hamburger icon */
+}
+
+/* Sidebar links */
+.sidebar a {
     text-decoration: none;
+    color: white;
+    font-size: 18px;
+    padding: 10px;
+    padding-left: 15px; /* Add 5px more to the left padding for the link */
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background-color 0.2s ease-in-out;
+    width: 90%;
+    height: 50px; /* Ensure fixed height for all sidebar items */
+}
+
+/* Icons inside sidebar links */
+.sidebar a i {
+    font-size: 20px;
+    margin-left: 5px; /* Add margin to move the icons 5px to the right */
+}
+
+/* Hover effect for sidebar links */
+.sidebar a:hover {
+    background-color: var(--hover-light);
+    margin-left: 5px;
+}
+
+/* Active link styles */
+.sidebar a.active {
+    background-color: var(--primary-dark);
+    margin-left: 5px;
+}
+
+/* Minimized sidebar - hide text */
+.sidebar.closed a span {
+    display: none;
+}
+
+/* Content styles */
+.content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    background-color: var(--background);
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: margin-left 0.3s ease;
+}
+
+.sidebar.closed + .content {
+    margin-left: var(--sidebar-min-width);
+    margin-left: 5px;
+}
+
+/* Optimization results */
+.optimization-results {
+    background-color: white;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.optimization-results h2 {
+    margin-bottom: 1.5rem;
+    color: var(--text);
+}
+
+.optimization-results ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.optimization-results li {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+.logout-link {
+    display: flex;
+    margin-top: 20px;
+    margin-bottom: 30%;
+    color: #f44336;
+    padding: 10px 15px;
+    z-index: 9999;
+}
+
+.logout-link:hover {
+    background-color: rgba(244, 67, 54, 0.1);
+}
+
+.logout-link i {
+    font-size: 1.2em;
+}
+
+/* Table styles */
+.table-container {
+    width: 80%;
+    margin: auto;
+    overflow: hidden;
+    padding: 20px;
+}
+
+.table-container h2 {
+    color: #2e5aa3;
+    /* margin-bottom: 20px; */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #2e5aa3;
+    color: white;
+}
+
+tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* Table name and button container */
+.header-container {
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-container a {
+    text-decoration: none;
+}
+
+.create-btn {
+    padding: 10px;
+    font-size: 16px;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+
+.create-btn {
+    background-color: var(--primary);
+}
+
+.create-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Delete edit buttons */
+.btn {
+    padding: 8px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border: none;
+}
+
+.edit-btn {
+    background-color: #2ea34f;
+    color: white;
+}
+
+.edit-btn:hover {
+    background-color: #1c7340;
+}
+
+.delete-btn {
+    background-color: #a32e2e;
+    color: white;
+}
+
+.delete-btn:hover {
+    background-color: #731c1c;
 }
 
 .nav-buttons {
@@ -98,64 +311,12 @@ body {
     gap: 10px;
 }
 
-.nav-btn {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    text-decoration: none;
-    font-size: 1em;
-    display: inline-block;
-    transition: background-color 0.3s;
-}
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px; /* Adjust sidebar width for smaller screens */
+    }
 
-.nav-btn:hover {
-    background-color: #0056b3;
-}
-
-header {
-    background: #35424a;
-    color: #ffffff;
-    padding-top: 30px;
-    min-height: 70px;
-    border-bottom: #007bff 3px solid;
-}
-header h1 {
-    margin: 0;
-    text-align: center;
-    padding-bottom: 20px;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-table, th, td {
-    border: 1px solid #ddd;
-}
-th, td {
-    padding: 8px;
-    text-align: center;
-}
-th {
-    background-color: #f2f2f2;
-}
-.btn {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 8px;  /* Smaller padding for smaller buttons */
-    margin-right: 5px;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    font-size: 12px;  /* Smaller font size */
-}
-
-.edit-btn {
-    background-color: #2196F3;  /* Blue color instead of green */
-}
-
-.delete-btn {
-    background-color: #f44336;  /* Red color for delete button */
+    .main-container {
+        margin-left: 200px; /* Adjust main container margin for smaller screens */
+    }
 }

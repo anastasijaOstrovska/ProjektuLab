@@ -162,13 +162,38 @@ def optimize_books():
         'time_per_book': book[5] if book[5] is not None else Decimal('0.0'),
         'machine' : random.randint(0, 3)
     })
+    cursor.close()
     print(books)
-    machines = [
-            {'name': 'Machine 1', 'id': 0},
-            {'name': 'Machine 2', 'id': 1},
-            {'name': 'Machine 3', 'id': 2},
-            {'name': 'Machine 4', 'id': 3},
-    ]
+#     machines = [
+#             {'name': 'Machine 1', 'id': 0},
+#             {'name': 'Machine 2', 'id': 1},
+#             {'name': 'Machine 3', 'id': 2},
+#             {'name': 'Machine 4', 'id': 3},
+#     ]
+    cursor = mysql.connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            hardware_id,
+            name,
+            type,
+            capacity
+        FROM hardwares
+        ORDER BY name
+    """)
+
+    machines_list = cursor.fetchall()
+    machines = []
+
+    for machine in machines_list:
+        machines.append({
+            'id': machine[0],
+            'name': machine[1],
+            'type': machine[2],
+            'capacity': machine[3]
+        })
+
+    cursor.close()
     # Count minimal budget here (can be without separate function)
     min_budget = sum(book['material_cost'] * book['min_books'] for book in books)
     min_time = math.ceil(sum(book['time_per_book'] * book['min_books'] for book in books)/8)
@@ -261,6 +286,65 @@ def delete_book(book_id):
 
     # Redirect to the book list page after deletion
     return redirect(url_for('books'))
+
+
+@app.route('/create_book', methods=['GET', 'POST'])
+@login_required
+def create_book():
+    cursor = mysql.connection.cursor()
+
+    if request.method == 'POST':
+        # Get book details from the form
+        name = request.form['name']
+        description = request.form['description']
+        selling_price = request.form['selling_price']
+
+        # Insert the book into the database
+        cursor.execute("""
+            INSERT INTO books (name, description, selling_price) VALUES (%s, %s, %s)
+        """, (name, description, selling_price))
+        book_id = cursor.lastrowid
+
+        # print(name, description, selling_price)
+        # Insert materials associated with the book
+        material_ids = request.form.getlist('material_id[]')
+        material_quantities = request.form.getlist('quantity[]')
+
+        for material_id, quantity in zip(material_ids, material_quantities):
+            # print(material_id, quantity)
+            cursor.execute("""
+                INSERT INTO book_materials (book_id, material_id, material_quantity)
+                VALUES (%s, %s, %s)
+            """, (book_id, material_id, quantity))
+
+        mysql.connection.commit()
+        cursor.close()
+
+        return redirect(url_for('books'))
+
+    # Fetch available materials from the database
+    cursor.execute("SELECT material_id, name, type FROM materials")
+    materials = cursor.fetchall()
+    cursor.close()
+
+    # Group materials by type
+    grouped_materials = {}
+    for material in materials:
+        material_type = material[2]
+        if material_type not in grouped_materials:
+            grouped_materials[material_type] = []
+        grouped_materials[material_type].append({
+            'id': material[0],
+            'name': material[1]
+        })
+#     grouped_materials = {
+#     "Paper": [{"id": 1, "name": "A4 Paper"}, {"id": 2, "name": "A3 Paper"}],
+#     "Ink": [{"id": 3, "name": "Black Ink"}, {"id": 4, "name": "Blue Ink"}]
+#     }
+
+    return render_template('create_book.html', materials=grouped_materials)
+
+
 
 @app.before_request
 def session_handler():
