@@ -17,7 +17,7 @@ from collections import defaultdict
 
 
 app = Flask(__name__)
-load_dotenv('C:/Users/Edward/Desktop/projectLab/ProjektuLab/flaskProj/pswd.env')
+load_dotenv('/var/www/ProjektuLab/flaskProj/pswd.env')
 
 # Настройки сессии
 app.config['SESSION_TYPE'] = 'filesystem'

@@ -1,4 +1,3 @@
-<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,22 +6,18 @@
     <link href="{{ url_for('static', filename='style_base.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>{% block title %}BobERP{% endblock %}</title>
-
-
 </head>
 <body>
 <!-- Header -->
 <header>
     <div class="container">
         <div class="logo">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt = "Logo" class="logo-image" style="width: 50px; height: auto;">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo-image" style="width: 50px; height: auto;">
             BobERP
         </div>
         <div class="user-info">@{{ session['username'] }}</div>
     </div>
 </header>
-
-
 
 <!-- Main content area -->
 <div class="main">
@@ -32,7 +27,7 @@
             <i class="fas fa-bars"></i>
         </button>
 
-        <!-- Основные ссылки -->
+        <!-- Sidebar Links -->
         <a href="{{ url_for('books') }}" class="sidebar-link" onclick="activateLink(event)">
             <i class="fas fa-book"></i>
             <span>Books</span>
@@ -41,23 +36,23 @@
             <i class="fas fa-cogs"></i>
             <span>Materials</span>
         </a>
-        <a href="{{ url_for('employees') }}" class="sidebar-link" onclick="activateLink(event)">
-            <i class="fas fa-users"></i>
-            <span>Workers</span>
-        </a>
         <a href="{{ url_for('machines') }}" class="sidebar-link" onclick="activateLink(event)">
             <i class="fas fa-laptop"></i>
             <span>Machines</span>
+        </a>
+        <a href="{{ url_for('employees') }}" class="sidebar-link" onclick="activateLink(event)">
+            <i class="fas fa-users"></i>
+            <span>Workers</span>
         </a>
         <a href="{{ url_for('optimize_books') }}" class="sidebar-link" onclick="activateLink(event)">
             <i class="fas fa-chart-line"></i>
             <span>Optimization</span>
         </a>
 
-        <!-- Настраиваем разделитель -->
+        <!-- Divider to push logout down -->
         <div style="flex-grow: 0.90;"></div>
 
-        <!-- Кнопка logout -->
+        <!-- Logout Button -->
         <a href="{{ url_for('logout') }}" class="sidebar-link logout-link" onclick="activateLink(event)">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
@@ -71,17 +66,39 @@
 </div>
 
 <script>
+    // Sidebar toggle function
     function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('closed');
+        const sidebar = document.querySelector('.sidebar'); // Select the sidebar element
+        sidebar.classList.toggle('closed'); // Toggle the 'closed' class
+
+        // Save the current state of the sidebar to localStorage
+        const isClosed = sidebar.classList.contains('closed');
+        localStorage.setItem('sidebarClosed', isClosed);
     }
 
+    // Function to activate the clicked link in the sidebar
     function activateLink(event) {
         const links = document.querySelectorAll('.sidebar-link');
         links.forEach(link => link.classList.remove('active'));
         event.target.closest('a').classList.add('active');
     }
-</script>
 
+    // Sidebar state persistence across pages
+    document.addEventListener('DOMContentLoaded', () => {
+        const sidebar = document.querySelector('.sidebar');
+        const toggleBtn = document.querySelector('.toggle-btn');
+
+        // Check if the sidebar state is saved in localStorage
+        const isSidebarClosed = localStorage.getItem('sidebarClosed') === 'true';
+
+        // Apply the saved state to the sidebar on page load
+        if (isSidebarClosed) {
+            sidebar.classList.add('closed');  // Minimize the sidebar
+        } else {
+            sidebar.classList.remove('closed');  // Maximize the sidebar
+        }
+
+    });
+</script>
 </body>
 </html>
