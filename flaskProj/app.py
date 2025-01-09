@@ -154,7 +154,7 @@ def optimize_books():
         hardwares = cursor.fetchall()
 
         cursor.execute(
-            "SELECT book_id, hardware_id, production_time_in_hours, order_in_queue "
+            "SELECT book_id, hardware_id, production_time_in_minutes, order_in_queue "
             "FROM book_hardwares ORDER BY order_in_queue"
         )
         book_hardwares = cursor.fetchall()
@@ -274,7 +274,7 @@ def books():
     cursor = mysql.connection.cursor()
 
     # Fetch all books from the database
-    cursor.execute("SELECT b.book_id, b.name, b.selling_price, SUM(bh.production_time_in_hours), SUM(m.cost_per_piece * bm.material_quantity) AS total_material_cost FROM books b LEFT JOIN book_hardwares bh ON b.book_id = bh.book_id LEFT JOIN book_materials bm ON b.book_id = bm.book_id LEFT JOIN materials m ON bm.material_id = m.material_id GROUP BY b.book_id, b.name, b.selling_price;")
+    cursor.execute("SELECT b.book_id, b.name, b.selling_price, SUM(bh.production_time_in_minutes), SUM(m.cost_per_piece * bm.material_quantity) AS total_material_cost FROM books b LEFT JOIN book_hardwares bh ON b.book_id = bh.book_id LEFT JOIN book_materials bm ON b.book_id = bm.book_id LEFT JOIN materials m ON bm.material_id = m.material_id GROUP BY b.book_id, b.name, b.selling_price;")
     books_list = cursor.fetchall()
     # You can now pass these data to your template or further processing
     books = []
