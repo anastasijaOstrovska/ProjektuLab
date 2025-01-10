@@ -20,7 +20,7 @@ Anželika Krasiļņikova.
 
 # Tehniskais risinājums
 ## Lietotāju stāsti
-| Numurs | Stasts                                                                                                                                                                                                | Prioritāte      |
+| Numurs | Stāsts                                                                                                                                                                                                | Prioritāte      |
 |--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
 |      1 | Operators vēlas redzēt pieprasījuma plānu un drukāšanas secību, jo ērtākai lietošanai vajadzētu sakārtot un optimizēt darba procesu.                                                                  | Must have       |
 |      2 | Ražošanas vadītājs vēlas pievienot un rediģēt pieprasījumu un iekārtu sarakstu, jo tas dod iespēju personalizēt un koriģēt procesu                                                                    | Must have       |
