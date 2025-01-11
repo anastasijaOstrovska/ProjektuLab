@@ -34,9 +34,11 @@ class Book:
                 f"Production Time: {self.production_time} minutes, Profit/Minute: {self.profit_per_minute:.2f})")
     
 class ProductionPlan:
-    def __init__(self, production_plan_id, operator_id, time_limit_in_days):
+    def __init__(self, production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days):
         self.production_plan_id = production_plan_id
+        self.production_plan_name = production_plan_name
         self.operator_id = operator_id
+        self.operator_name = operator_name
         self.time_limit_in_days = time_limit_in_days
         self.books = []
 

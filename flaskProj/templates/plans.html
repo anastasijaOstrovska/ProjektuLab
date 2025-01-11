@@ -1,77 +1,86 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Production Plans</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        table {
-            width: 80%;
-            margin: 0 auto;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
-        }
-        th {
-            background-color: #f4f4f4;
-        }
-        h1, h2, h3 {
-            color: #333;
-        }
-        .button {
-            padding: 10px 20px;
-            margin: 5px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-            border-radius: 5px;
-            display: inline-flex;
-            align-items: center;
-        }
-        .button:hover {
-            background-color: #45a049;
-        }
-        .button i {
-            margin-right: 5px; /* Отступ между иконкой и текстом */
-        }
-    </style>
-</head>
-<body>
-    <h1>All Production Plans</h1>
-    
-    <table>
+{% extends "base.html" %}
+
+{% block title %}All Production Plans{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    <div class="header-container">
+        <h2>All Production Plans</h2>
+
+        <a href="{{ url_for('create_plan') }}" class="create-btn">
+            <span>Add New Plan</span>
+        </a>
+    </div>
+    <table id="sortable-table">
         <thead>
             <tr>
-                <th>Production Plan ID</th>
-                <th>Operator</th>
-                <th>Time Limit (days)</th>
+                <th data-column="0" class="sortable">Production Plan</th>
+                <th data-column="1" class="sortable">Operator</th>
+                <th data-column="2" class="sortable">Time Limit (days)</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for plan in production_plans.values() %}
             <tr>
-                <td>{{ plan.production_plan_id }}</td>
-                <td>{{ plan.operator_id }}</td>
+                <td>{{ plan.production_plan_name }}</td>
+                <td>{{ plan.operator_name }}</td>
                 <td>{{ plan.time_limit_in_days }}</td>
-                <td><a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id) }}" class="button">View</a></td>
+                <td>
+                    <div class="nav-buttons">
+                    <a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id) }}" class="btnview view-btn">View</a>
+                    <a href="{{ url_for('edit_plan', plan_id=plan.production_plan_id) }}" class="btn edit-btn">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+</div>
 
-    <!-- Кнопка "Домой" с иконкой -->
-    <a href="{{ url_for('home') }}" class="button">
-        <i class="fas fa-arrow-left"></i> Home
-    </a>
-</body>
-</html>
+<script>
+
+    // Table sorting
+    document.addEventListener('DOMContentLoaded', () => {
+        const table = document.getElementById('sortable-table');
+        const headers = table.querySelectorAll('th.sortable');
+        const tbody = table.querySelector('tbody');
+
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const columnIndex = parseInt(header.getAttribute('data-column'));
+                const isAscending = header.classList.contains('asc');
+                sortTable(tbody, columnIndex, !isAscending);
+
+                // Update header classes
+                headers.forEach(h => h.classList.remove('asc', 'desc'));
+                header.classList.toggle('asc', !isAscending);
+                header.classList.toggle('desc', isAscending);
+            });
+        });
+
+        function sortTable(tbody, columnIndex, ascending) {
+            const rows = Array.from(tbody.rows);
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim();
+                const bText = b.cells[columnIndex].textContent.trim();
+
+                // Numeric sorting for the quantity column
+                if (!isNaN(aText) && !isNaN(bText)) {
+                    return ascending ? aText - bText : bText - aText;
+                }
+                // String sorting for other columns
+                return ascending
+                    ? aText.localeCompare(bText)
+                    : bText.localeCompare(aText);
+            });
+
+            // Append sorted rows back to the tbody
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+    });
+</script>
+{% endblock %}

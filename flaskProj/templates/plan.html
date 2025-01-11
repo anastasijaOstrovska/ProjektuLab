@@ -1,41 +1,136 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Production Plan</title>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 80%;
-            margin: 20px auto;
-        }
-        table, th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-        th {
-            background-color: #007bff;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <h1>Production Plan ID: {{ production_plan_id }}</h1>
+{% extends "base.html" %}
 
-    <!-- Table for Book Details -->
-    <h2>Books Information</h2>
+{% block title %}Production Plan{% endblock %}
+
+{% block content %}
+
+<div class="table-container">
+    <!-- Back to Plans Button -->
+    <a href="/plans" class="btnview view-btn">
+            Back to All Plans
+    </a>
+    <div style="margin: 20px 0;"></div>
+    <h2>Production Plan: {{ production_plan_name }}</h2>
+    <div style="margin: 20px 0;"></div>
+    <div class="button-container">
+        <h3>Optimize by budget</h3>
+        <label for="budget">Most Efficient Budget:</label>
+        <form action="{{ url_for('display_production_plan', production_plan_id=production_plan_id) }}" method="POST">
+            <div class="input-button-group">
+                <input type="number" name="budget" value="{{ optimized_budget }}">
+                <button type="submit">Find Efficient Budget</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="button-container">
+        <form action="/calculate_with_budget" method="POST">
+            <label for="budget">Budget Limit (euro):</label>
+            <div class="input-button-group">
+                <input type="number" id="budget" name="budget" step="0.01" value="{{ min_budget }}"
+                       min="{{ min_budget }}" max="{{ max_budget }}" required>
+                <button type="submit">Calculate by Budget</button>
+            </div>
+            <input type="hidden" name="production_plan_id" value="{{ production_plan_id }}">
+        </form>
+    </div>
+
+    <div class="button-container">
+        <h3>Optimize by days</h3>
+        <form action="/calculate_by_days" method="POST">
+            <label for="time_limit">Time Limit (days):</label>
+            <div class="input-button-group">
+                <input type="number" id="time_limit" name="time_limit" step="1"
+                       min="{{ total_days_min }}" max="{{ total_days_max }}" value="{{ total_days_min }}" required>
+                <button type="submit">Calculate by Days</button>
+            </div>
+            <input type="hidden" name="production_plan_id" value="{{ production_plan_id }}">
+        </form>
+    </div>
+
+
+    <!--    <div class="button-container">-->
+<!--        <h3>Optimize by budget</h3>-->
+<!--        <form action="{{ url_for('display_production_plan', production_plan_id=production_plan_id) }}" method="POST" >-->
+<!--            <input type="number" name="budget" value="{{ optimized_budget }}">-->
+<!--            <button type="submit">Optimize Budget</button>-->
+<!--        </form>-->
+<!--    </div>-->
+<!--    <div class="button-container">-->
+<!--        <div style="margin: 10px 0;"></div>-->
+<!--        <form action="/calculate_with_budget" method="POST">-->
+<!--            <label for="budget">Limit Budget:</label>-->
+<!--            <input type="number" id="budget" name="budget" step="0.01" value="{{ min_budget }}"-->
+<!--                   min="{{ min_budget }}" max="{{ max_budget }}" required>-->
+<!--            <input type="hidden" name="production_plan_id" value="{{ production_plan_id }}">-->
+<!--            <button type="submit">Calculate by Budget</button>-->
+<!--        </form>-->
+<!--    </div>-->
+<!--    <div class="button-container">-->
+<!--        <h3>Optimize by days</h3>-->
+
+<!--        <form action="/calculate_by_days" method="POST">-->
+<!--            <label for="time_limit">Time Limit (days):</label>-->
+<!--            <input type="number" id="time_limit" name="time_limit" step="1" min="{{ total_days_min}}" max="{{ total_days_max}}" required>-->
+<!--            <input type="hidden" name="production_plan_id" value="{{ production_plan_id }}">-->
+<!--            <button type="submit">Calculate by Days</button>-->
+<!--        </form>-->
+<!--    </div>-->
+    <div style="margin: 20px 0;"></div>
+    <h3>Plan Completion Information</h3>
     <table>
         <thead>
+        <tr>
+            <th></th>
+            <th>Minimum</th>
+            <th>Maximum</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Budget</td>
+            <td>{{ min_budget }}</td>
+            <td>{{ max_budget }}</td>
+        </tr>
+        <tr>
+            <td>Profit</td>
+            <td>
+                {% if min_profit is not none %}
+                {{ min_profit }}
+                {% else %}
+                Not calculated
+                {% endif %}
+            </td>
+            <td>
+                {% if max_profit is not none %}
+                {{ max_profit }}
+                {% else %}
+                Not calculated
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td>Time</td>
+            <td>{{ total_days_min }} days</td>
+            <td>{{ total_days_max }} days</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div style="margin: 30px 0;"></div>
+
+    <!-- Table for Book Details -->
+    <h3>Books Information</h3>
+    <table id="sortable-table">
+        <thead>
             <tr>
-                <th>Book</th>
-                <th>Min Amount</th>
-                <th>Max Amount</th>
-                <th>Production Cost ($)</th>
-                <th>Selling Price ($)</th>
-                <th>Production Time (min)</th>
-                <th>Profit per Hour ($)</th>
+                <th data-column="0" class="sortable">Book</th>
+                <th data-column="1" class="sortable">Min Amount</th>
+                <th data-column="2" class="sortable">Max Amount</th>
+                <th data-column="3" class="sortable">Production Cost ($)</th>
+                <th data-column="4" class="sortable">Selling Price ($)</th>
+                <th data-column="5" class="sortable">Production Time (min)</th>
+                <th data-column="6" class="sortable">Profit per Hour ($)</th>
             </tr>
         </thead>
         <tbody>
@@ -53,52 +148,48 @@
         </tbody>
     </table>
 
-    <h2>Budget Information</h2>
-    <p>Minimum Budget: {{ min_budget }}</p>
-    <p>Maximum Budget: {{ max_budget }}</p>
+</div>
+<script>
 
-    {% if min_profit is not none %}
-        <p>Minimum Profit: {{ min_profit }}</p>
-    {% else %}
-        <p>Minimum Profit: Not calculated</p>
-    {% endif %}
+    // Table sorting
+    document.addEventListener('DOMContentLoaded', () => {
+        const table = document.getElementById('sortable-table');
+        const headers = table.querySelectorAll('th.sortable');
+        const tbody = table.querySelector('tbody');
 
-    {% if max_profit is not none %}
-        <p>Maximum Profit: {{ max_profit }}</p>
-    {% else %}
-        <p>Maximum Profit: Not calculated</p>
-    {% endif %}
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const columnIndex = parseInt(header.getAttribute('data-column'));
+                const isAscending = header.classList.contains('asc');
+                sortTable(tbody, columnIndex, !isAscending);
 
-    <!-- Добавление информации о минимальном и максимальном количестве дней -->
-    <h2>Time Information</h2>
-    <p>Minimum Time: {{ total_days_min}} days</p>
-    <p>Maximum Time: {{ total_days_max}} days</p>
+                // Update header classes
+                headers.forEach(h => h.classList.remove('asc', 'desc'));
+                header.classList.toggle('asc', !isAscending);
+                header.classList.toggle('desc', isAscending);
+            });
+        });
 
-    <form action="/calculate_with_budget" method="POST">
-        <label for="budget">Budget (from {{ min_budget }} to {{ max_budget }}):</label>
-        <input type="number" id="budget" name="budget" step="0.01" value="{{ min_budget }}" 
-               min="{{ min_budget }}" max="{{ max_budget }}" required>
-        <input type="hidden" name="production_plan_id" value="{{ production_plan_id }}">
-        <button type="submit">Calculate</button>
-    </form>
+        function sortTable(tbody, columnIndex, ascending) {
+            const rows = Array.from(tbody.rows);
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim();
+                const bText = b.cells[columnIndex].textContent.trim();
 
-    <!-- Поле для ввода ограничения по дням -->
-    <form action="/calculate_by_days" method="POST">
-        <label for="time_limit">Time Limit (days):</label>
-        <input type="number" id="time_limit" name="time_limit" step="1" min="{{ total_days_min}}" max="{{ total_days_max}}" required>
-        <input type="hidden" name="production_plan_id" value="{{ production_plan_id }}">
-        <button type="submit">Calculate by Days</button>
-    </form>
+                // Numeric sorting for the quantity column
+                if (!isNaN(aText) && !isNaN(bText)) {
+                    return ascending ? aText - bText : bText - aText;
+                }
+                // String sorting for other columns
+                return ascending
+                    ? aText.localeCompare(bText)
+                    : bText.localeCompare(aText);
+            });
 
-    <div class="button-container">
-        <form action="{{ url_for('display_production_plan', production_plan_id=production_plan_id) }}" method="POST" style="display:inline;">
-            <input type="number" name="budget" value="{{ optimized_budget }}">
-            <button type="submit" class="btn">Optimize Budget</button>
-        </form>
-    </div>
-    <!-- Back to Plans Button -->
-    <a href="/plans">
-        <button>Back to Plans</button>
-    </a>
-</body>
-</html>
+            // Append sorted rows back to the tbody
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+    });
+</script>
+{% endblock %}

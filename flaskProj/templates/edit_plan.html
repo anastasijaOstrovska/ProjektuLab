@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Book</title>
+  <link href="{{ url_for('static', filename='style_changes.css') }}" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container" style="max-width: 800px;">
+  <a href="{{ url_for('display_plans') }}">
+    <button type="button">
+      <i class="fas fa-arrow-left fa-1.5x"></i>
+    </button>
+  </a>
+  <h2>Edit Production Plan</h2>
+  <form method="POST" onsubmit="return confirm('Are you sure you want to save changes?');">
+    <!-- Поля для редактирования книги -->
+    <label for="name">Name:</label>
+    <input type="text" name="name" id="name" value="{{ plan.name }}" required>
+
+    <label for="operator">Operator:</label>
+    <select id="operator" name="operator" data-selected="{{ plan.operator_id }}">
+      {% for operator_option in operator_options %}
+      <option value="{{ operator_option.id }}" {% if operator_option.id == plan.operator_id %}selected{% endif %}>
+        {{ operator_option.name }}
+      </option>
+      {% endfor %}
+    </select>
+
+    <!-- Table of books -->
+    <div class="table-container">
+      <div class="header-container">
+        <h3>Books</h3>
+        <button type="button" class="table-btn" id="add-book-btn">Add Books</button>
+      </div>
+      <table id="books-table">
+        <thead>
+        <tr>
+          <th>Book Name</th>
+          <th>Min Amount</th>
+          <th>Max Amount</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for book in plan.books %}
+        <tr>
+          <input type="hidden" name="book_row_status[]" value="unchanged">
+          <td>
+            <select name="book_id[]" class="book-name" required>
+              {% for option in book_options %}
+              <option value="{{ id }}" {% if book.id == option.id %}selected{% endif %}>{{ option.name }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td>
+            <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="min_amount[]" value="{{ book.min_amount }}" required>
+          </td>
+          <td>
+            <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="max_amount[]" value="{{ book.max_amount }}" required>
+          </td>
+          <td>
+            <button type="button" class="delete-row-btn">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <button type="submit">Save Changes</button>
+  </form>
+
+</div>
+<script>
+  // Book table
+  const bookOptions = {{ book_options | tojson }};
+  const booksTable = document.getElementById('books-table').querySelector('tbody');
+  const addBookBtn = document.getElementById('add-book-btn');
+
+  // Populate material rows with existing data
+  // [...materialsTable.rows].forEach((row) => {
+  //   const bookSelect = row.querySelector('.book-name');
+  //   const materialNameSelect = row.querySelector('.material-name');
+  //   const selectedType = materialTypeSelect.value;
+  //
+  //   bookSelect.addEventListener('change', () => {
+  //     const type = materialTypeSelect.value;
+  //   });
+  //
+  // });
+
+
+  // Add new material row
+  addBookBtn.addEventListener('click', () => {
+    const row = document.createElement('tr');
+
+
+    row.innerHTML = `
+            <input type="hidden" name="book_row_status[]" value="new">
+            <td>
+                <select name="book_id[]" class="book-name" required>
+                    <option value="" disabled selected>Select Book</option>
+                    ${bookOptions.map(book => `<option value="${book.id}">${book.name}</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="min_amount[]" required>
+            </td>
+            <td>
+                <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="max_amount[]" required>
+            </td>
+            <td>
+                <button type="button" class="delete-row-btn">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+
+    booksTable.appendChild(row);
+
+
+    row.querySelector('.delete-row-btn').addEventListener('click', () => {
+      booksTable.removeChild(row);
+    });
+  });
+
+
+
+  booksTable.addEventListener('input', (event) => {
+    const row = event.target.closest('tr');
+    const book_statusField = row.querySelector('input[name="book_row_status[]"]');
+
+    if (book_statusField.value === 'unchanged') {
+      book_statusField.value = 'edited';
+    }
+
+  });
+  // Deleted row status
+  booksTable.addEventListener('click', (event) => {
+    if (event.target.closest('.delete-row-btn')) {
+      const row = event.target.closest('tr');
+      const book_statusField = row.querySelector('input[name="book_row_status[]"]');
+
+      if (book_statusField.value === 'new') {
+        // Удалите строки, которые ещё не были добавлены в базу данных
+        booksTable.removeChild(row);
+      } else {
+        // Пометьте строку как удалённую
+        book_statusField.value = 'deleted';
+        row.style.display = 'none'; // Скрыть строку
+      }
+
+    }
+  });
+
+
+</script>
+</body>
+</html>

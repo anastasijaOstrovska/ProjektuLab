@@ -1,77 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculation Results</title>
+{% extends "base.html" %}
+
+{% block title %}Calculation Results{% endblock %}
+
+{% block content %}
+<div class="table-container">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f9;
-        }
+    <a href="{{ url_for('display_production_plan', production_plan_id=production_plan_id) }}" class="btnview view-btn">
+        Back to Optimization Plan
+    </a>
+   <div style="margin: 30px 0;"></div>
+    <h2>Calculation Results</h2>
+    <div class="layout-container">
+        <div class="labels">
+            <div class="label-item">
+                <span class="label-text">Selected Budget:</span>
+                <span class="label-value">{{ budget }} $</span>
+            </div>
+            <div class="label-item">
+                <span class="label-text">Total days:</span>
+                <span class="label-value">{{ total_days }}</span>
+            </div>
+            <div class="label-item">
+                <span class="label-text">Profit:</span>
+                <span class="label-value">{{ profit }} $</span>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="profitChart"></canvas>
+            <canvas id="scheduleChart"></canvas>
+        </div>
+    </div>
 
-        h1, h2, h3 {
-            color: #333;
-        }
 
-        table {
-            width: 80%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+    <div style="margin: 30px 0;"></div>
+    <h3>Production Schedule</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Book</th>
+            <th>Hardware</th>
+            <th>Start Time</th>
+            <th>Finish Time</th>
+            <th>Production Time</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for detail in schedule_details %}
+        <tr>
+            <td>{{ detail.book_name }}</td>
+            <td>{{ detail.hardware_name }}</td>
+            <td>{{ detail.start_time }}</td>
+            <td>{{ detail.finish_time }}</td>
+            <td>{{ detail.production_time }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 
-        table th, table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-
-        table th {
-            background-color: #007bff;
-            color: white;
-        }
-
-        table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        canvas {
-            max-width: 800px;
-            margin: 20px auto;
-            display: block;
-        }
-
-        .button-container {
-            text-align: center;
-            margin: 20px;
-        }
-
-        .btn {
-            text-decoration: none;
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .btn:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <h1>Calculation Results</h1>
-    <h2>Selected Budget: {{ budget }} $</h2>
-    <h3>Total days: {{ total_days }}</h3>
-    <h3>Profit: {{ profit }} $</h3>
-
+    <div style="margin: 30px 0;"></div>
     <h3>Books Selected for Production</h3>
     <table>
         <thead>
@@ -90,59 +76,44 @@
         </tbody>
     </table>
 
-    <h3>Production Schedule</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Book</th>
-                <th>Hardware</th>
-                <th>Start Time</th>
-                <th>Finish Time</th>
-                <th>Production Time</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for detail in schedule_details %}
-            <tr>
-                <td>{{ detail.book_name }}</td>
-                <td>{{ detail.hardware_name }}</td>
-                <td>{{ detail.start_time }}</td>
-                <td>{{ detail.finish_time }}</td>
-                <td>{{ detail.production_time }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <h3>Production Overview</h3>
-    <canvas id="productionChart"></canvas>
-    
+    <div style="margin: 30px 0;"></div>
+    <h3>Graphs</h3>
+    <div style="margin: 30px 0;"></div>
+    <div class="chart-container">
+        <canvas id="productionChart"></canvas>
+        <canvas id="hoursChart"></canvas>
+    </div>
+    <div style="margin: 30px 0;"></div>
+    <a href="{{ url_for('display_production_plan', production_plan_id=production_plan_id) }}" class="btnview view-btn">
+        Back to Optimization Plan
+    </a>
     <script>
         // Production Chart
         const productionData = {
             labels: [{% for book, amount in selected_books %}"{{ book.name }}"{% if not loop.last %}, {% endif %}{% endfor %}],
-            datasets: [{
-                label: 'Books Produced',
-                data: [{% for book, amount in selected_books %}{{ amount }}{% if not loop.last %}, {% endif %}{% endfor %}],
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(54, 162, 235, 0.2)',
-                    'rgba(255, 206, 86, 0.2)',
-                    'rgba(75, 192, 192, 0.2)',
-                    'rgba(153, 102, 255, 0.2)',
-                    'rgba(255, 159, 64, 0.2)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)'
-                ],
-                borderWidth: 1
-            }]
+        datasets: [{
+            label: 'Books Produced',
+            data: [{% for book, amount in selected_books %}{{ amount }}{% if not loop.last %}, {% endif %}{% endfor %}],
+        backgroundColor: [
+            'rgba(255, 99, 132, 0.2)',
+            'rgba(54, 162, 235, 0.2)',
+            'rgba(255, 206, 86, 0.2)',
+            'rgba(75, 192, 192, 0.2)',
+            'rgba(153, 102, 255, 0.2)',
+            'rgba(255, 159, 64, 0.2)'
+        ],
+            borderColor: [
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)'
+        ],
+            borderWidth: 1
+        }]
         };
-    
+
         const productionConfig = {
             type: 'bar',
             data: productionData,
@@ -157,7 +128,7 @@
                             const index = legendItem.datasetIndex;
                             const chart = legend.chart;
                             const meta = chart.getDatasetMeta(index);
-    
+
                             meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
                             chart.update();
                         }
@@ -170,20 +141,9 @@
                 }
             }
         };
-    
+
         new Chart(document.getElementById('productionChart'), productionConfig);
-    </script>
-    
-    <h3>Graphs</h3>
-    <canvas id="profitChart"></canvas>
-    <canvas id="scheduleChart"></canvas>
-    <canvas id="hoursChart"></canvas>
 
-    <div class="button-container">
-        <a href="/plans" class="btn">Back to Plans</a>
-    </div>
-
-    <script>
         // Profit Chart
         const profitData = {
             labels: [{% for book, amount in selected_books %}"{{ book.name }}"{% if not loop.last %}, {% endif %}{% endfor %}],
@@ -202,7 +162,7 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: true }
                 },
                 scales: {
                     y: { beginAtZero: true }
@@ -262,5 +222,5 @@
             }
         });
     </script>
-</body>
-</html>
+</div>
+{% endblock %}

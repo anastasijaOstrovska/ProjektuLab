@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Book</title>
+    <link href="{{ url_for('static', filename='style_changes.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container" style="max-width: 800px;">
+    <a href="{{ url_for('display_plans') }}">
+        <button type="button">
+            <i class="fas fa-arrow-left fa-1.5x"></i>
+        </button>
+    </a>
+    <h2>Create Production Plan</h2>
+    <form method="POST" onsubmit="return confirm('Are you sure you want to create this plan?');">
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name" required>
+
+        <label for="operator">Operator:</label>
+        <select id="operator" name="operator" required>
+            <option value="" disabled selected>Select Operator</option>
+        </select>
+
+        <div class="table-container">
+            <div class="header-container">
+                <h3>Books</h3>
+                <button type="button" class="table-btn" id="add-book-btn">Add Book</button>
+            </div>
+            <table id="books-table">
+                <thead>
+                <tr>
+                    <th>Book Name</th>
+                    <th>Min Amount</th>
+                    <th>Max Amount</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+
+        <button type="submit">Create Plan</button>
+    </form>
+</div>
+
+<script>
+    // Operators list
+    const operatorSelect = document.getElementById('operator');
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const operatorsList = {{ operators | tojson }}; // from Flask
+        operatorsList.forEach(operator => {
+            const option = document.createElement('option');
+            option.value = operator.id;
+            option.textContent = operator.name;
+            operatorSelect.appendChild(option);
+        });
+
+    });
+
+
+    // Book table
+    const bookOptions = {{ books | tojson }};
+    const booksTable = document.getElementById('books-table').querySelector('tbody');
+    const addBookBtn = document.getElementById('add-book-btn');
+
+    addBookBtn.addEventListener('click', () => {
+        const row = document.createElement('tr');
+
+
+        row.innerHTML = `
+            <td>
+                <select name="book_id[]" class="book-name" required>
+                    <option value="" disabled selected>Select Book</option>
+                    ${bookOptions.map(book => `<option value="${book.id}">${book.name}</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="min_amount[]" required>
+            </td>
+            <td>
+                <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="max_amount[]" required>
+            </td>
+            <td>
+                <button type="button" class="delete-row-btn">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+
+        booksTable.appendChild(row);
+
+        row.querySelector('.delete-row-btn').addEventListener('click', () => {
+            booksTable.removeChild(row);
+        });
+    });
+
+</script>
+
+</body>
+</html>

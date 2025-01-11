@@ -155,7 +155,17 @@ def books():
     cursor = mysql.connection.cursor()
 
     # Fetch all books from the database
-    cursor.execute("SELECT b.book_id, b.name, b.selling_price, SUM(bh.production_time_in_minutes), SUM(m.cost_per_piece * bm.material_quantity) AS total_material_cost FROM books b LEFT JOIN book_hardwares bh ON b.book_id = bh.book_id LEFT JOIN book_materials bm ON b.book_id = bm.book_id LEFT JOIN materials m ON bm.material_id = m.material_id GROUP BY b.book_id, b.name, b.selling_price;")
+    cursor.execute("""SELECT b.book_id, b.name, b.selling_price, total_production_time,
+                    bm.total_material_cost
+                      FROM books b
+                      LEFT JOIN (SELECT bh.book_id,
+                            SUM(bh.production_time_in_minutes) AS total_production_time
+                            FROM book_hardwares bh
+                            GROUP BY bh.book_id) bh ON b.book_id = bh.book_id
+                      LEFT JOIN (SELECT bm.book_id, SUM(m.cost_per_piece * bm.material_quantity) AS total_material_cost
+                            FROM book_materials bm
+                            LEFT JOIN materials m ON bm.material_id = m.material_id
+                            GROUP BY bm.book_id) bm ON b.book_id = bm.book_id; """)
     books_list = cursor.fetchall()
     # You can now pass these data to your template or further processing
     books = []
@@ -899,6 +909,202 @@ def delete_machine(machine_id):
     
     return f"Machine was successfully deleted"
 
+
+# plans CRUD operations
+
+@app.route('/create_plan', methods=['GET', 'POST'])
+@login_required
+def create_plan():
+    cursor = mysql.connection.cursor()
+
+    if request.method == 'POST':
+        # Get plan details from the form
+        name = request.form['name']
+        operator = request.form['operator']
+
+        # Insert the plan into the database
+        cursor.execute("""
+            INSERT INTO production_plan (plan_name, operator_id) VALUES (%s, %s)
+        """, (name, operator))
+        plan_id = cursor.lastrowid
+
+#         print(name, operator)
+        # Insert books associated with the plan
+        book_ids = request.form.getlist('book_id[]')
+        min_amounts = request.form.getlist('min_amount[]')
+        max_amounts = request.form.getlist('max_amount[]')
+
+        for book_id, min_amount, max_amount in zip(book_ids, min_amounts, max_amounts):
+            # print(material_id, quantity)
+            cursor.execute("""
+                INSERT INTO production_plan_books (book_id, book_amount_min, book_amount_max, production_plan_id)
+                VALUES (%s, %s, %s, %s)
+            """, (book_id, min_amount, max_amount, plan_id))
+
+        mysql.connection.commit()
+        cursor.close()
+
+        return redirect(url_for('display_plans'))
+
+    # Fetch available books from the database
+    cursor.execute("SELECT book_id, name FROM books")
+    books = cursor.fetchall()
+
+    # Group books by type
+    grouped_books = []
+    for book in books:
+        grouped_books.append({
+        'id': book[0],
+        'name': book[1]
+        })
+
+    # Fetch available operators from the database
+    cursor.execute("""
+           SELECT e.employee_id, e.name, e.surname FROM employees e
+           JOIN users u on u.user_id = e.user_id
+           WHERE role_id = 2
+       """)
+    operators = cursor.fetchall()
+
+    # Group books by type
+    grouped_operators = []
+    for operator in operators:
+        grouped_operators.append({
+        'id': operator[0],
+        'name': operator[1] + " " + operator[2]
+        })
+    cursor.close()
+    return render_template('create_plan.html', operators=grouped_operators, books=grouped_books)
+
+
+
+@app.route('/edit_plan/<int:plan_id>', methods=['GET'])
+@login_required
+def edit_plan(plan_id):
+
+    cursor = mysql.connection.cursor()
+    cursor.execute("""SELECT
+                      p.plan_name, p.operator_id
+                      FROM production_plan p
+                      where p.production_plan_id = %s""", (plan_id,))
+
+    if cursor.rowcount == 0:
+        return redirect(url_for('display_plans'))
+
+    plan_list = cursor.fetchone()
+    plan = {
+            'name': plan_list[0],
+            'operator_id': plan_list[1],
+            'books': [],
+        }
+    # Books list
+    cursor.execute("""SELECT
+                      b.book_id, b.name, ppl.book_amount_min, ppl.book_amount_max
+                      FROM production_plan_books ppl
+                      JOIN books b ON b.book_id = ppl.book_id
+                      where ppl.production_plan_id = %s """, (plan_id,))
+    books_list = cursor.fetchall()
+
+    for book in books_list:
+        plan['books'].append({
+            'id': book[0],
+            'name': book[1],
+            'min_amount': book[2],
+            'max_amount': book[3]
+        })
+
+
+# Fetch available books from the database
+    cursor.execute("SELECT book_id, name FROM books")
+    books = cursor.fetchall()
+
+    # Group books by type
+    book_options = []
+    for book in books:
+        book_options.append({
+        'id': book[0],
+        'name': book[1]
+        })
+
+    # Fetch available operators from the database
+    cursor.execute("""
+           SELECT e.employee_id, e.name, e.surname FROM employees e
+           JOIN users u on u.user_id = e.user_id
+           WHERE role_id = 2
+       """)
+    operators = cursor.fetchall()
+
+    # Group books by type
+    operator_options = []
+    for operator in operators:
+        operator_options.append({
+        'id': operator[0],
+        'name': operator[1] + " " + operator[2]
+        })
+    cursor.close()
+
+
+#     materials_options = {
+#     "Paper": [{"id": 1, "name": "A4 Paper"}, {"id": 2, "name": "A3 Paper"}],
+#     "Ink": [{"id": 3, "name": "Black Ink"}, {"id": 4, "name": "Blue Ink"}]
+#     }
+
+    cursor.close()
+    return render_template('edit_plan.html', plan=plan, operator_options=operator_options, book_options=book_options)
+
+
+
+@app.route('/edit_plan/<int:plan_id>', methods=['POST'])
+@login_required
+def save_plan(plan_id):
+#     return redirect(url_for('books'))
+    cursor = mysql.connection.cursor()
+
+    # Get plan details from the form
+    name = request.form['name']
+    operator = request.form['operator']
+
+    cursor.execute("""
+        UPDATE production_plan
+        SET  plan_name = %s, operator_id = %s
+        WHERE production_plan_id = %s;
+    """, (name, operator, plan_id))
+
+
+    # Получить данные из формы
+    # Insert books associated with the plan
+    book_row_statuses = request.form.getlist('book_row_status[]')
+    book_ids = request.form.getlist('book_id[]')
+    min_amounts = request.form.getlist('min_amount[]')
+    max_amounts = request.form.getlist('max_amount[]')
+
+
+    # Material tables
+    for book_row_status, book_id, min_amount, max_amount in zip(book_row_statuses, book_ids, min_amounts, max_amounts):
+        if book_row_status == 'new':
+            # Добавить новую строку
+            cursor.execute("""
+                INSERT INTO production_plan_books (book_id, book_amount_min, book_amount_max, production_plan_id)
+                VALUES (%s, %s, %s, %s)
+            """, (book_id, min_amount, max_amount, plan_id))
+        elif book_row_status == 'edited':
+            # Обновить существующую строку
+            cursor.execute("""
+                        UPDATE production_plan_books
+                        SET book_id = %s, book_amount_min = %s, book_amount_max = %s
+                        WHERE production_plan_book_id = %s
+                    """, (book_id, min_amount, max_amount, plan_id))
+        elif book_row_status == 'deleted':
+            # Удалить строку
+            cursor.execute("DELETE FROM production_plan_books WHERE production_plan_book_id = %s", (plan_id,))
+
+    mysql.connection.commit()
+    return redirect(url_for('display_plans'))
+
+
+
+
+
 #########################################################################################################
 #########################################################################################################
 #########################################################################################################
@@ -924,7 +1130,8 @@ def fetch_books_and_machines():
 
     # Get production plans
     cursor.execute(""" 
-        SELECT production_plan_id, operator_id, time_limit_in_days FROM production_plan;
+        SELECT p.production_plan_id, p.plan_name, p.operator_id, CONCAT(e.name,' ',e.surname), p.time_limit_in_days FROM production_plan p
+        JOIN employees e ON e.employee_id = p.operator_id;
     """)
     production_plan_data = cursor.fetchall()
 
@@ -958,8 +1165,8 @@ def fetch_books_and_machines():
         machines[hardware_id] = Machine(hardware_id, name, type, capacity)
 
     production_plans = {}
-    for production_plan_id, operator_id, time_limit_in_days in production_plan_data:
-        production_plans[production_plan_id] = ProductionPlan(production_plan_id, operator_id, time_limit_in_days)
+    for production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days in production_plan_data:
+        production_plans[production_plan_id] = ProductionPlan(production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days)
 
     # Bind books to plans considering their order in the production_plan_books table
     for production_plan_book_id, book_id, book_amount_min, book_amount_max, production_plan_id in production_plan_books_data:
@@ -1070,21 +1277,25 @@ def calculate_budget_and_profit(production_plan_id, production_plans, books, mac
 def display_plans():
     # Get the list of all production plans from the database
     books, machines, production_plans = fetch_books_and_machines()
-
+    print(production_plans)
     return render_template('plans.html', production_plans=production_plans)
 
 
-@app.route('/<int:production_plan_id>', methods=['GET', 'POST'])
+@app.route('/plan/<int:production_plan_id>', methods=['GET', 'POST'])
 @login_required
 def display_production_plan(production_plan_id):
     books, machines, production_plans = fetch_books_and_machines()
     plan = production_plans.get(production_plan_id)
+
     if not plan:
-        return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
+        return f"<h1>Production plan {production_plan_id} not found.</h1>"
+
+    production_plan_name = plan.production_plan_name
 
     # Получаем минимальный и максимальный бюджет
     min_budget, max_budget = plan.calculate_budget(books)
     optimized_budget = min_budget
+#     optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id)
     # Проверяем, был ли отправлен POST-запрос для оптимизации бюджета
     if request.method == 'POST':
         optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id)  # Оптимизируем бюджет
@@ -1127,6 +1338,7 @@ def display_production_plan(production_plan_id):
     return render_template(
         'plan.html',
         production_plan_id=production_plan_id,
+        production_plan_name=production_plan_name,
         books_details=books_details,  # Add book details for table
         min_budget=min_budget,
         max_budget=max_budget,
@@ -1213,6 +1425,7 @@ def calculate_with_budget():
     # Pass data to the result
     return render_template(
         'result.html',
+        production_plan_id=production_plan_id,
         budget=budget,
         profit=profit,
         selected_books=selected_books,
@@ -1259,6 +1472,7 @@ def calculate_by_days():
     # Возврат результата
     return render_template(
         'result.html',
+        production_plan_id=production_plan_id,
         budget=budget,
         profit=profit,
         selected_books=selected_books,
