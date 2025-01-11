@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Production Plans</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        table {
+            width: 80%;
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .button i {
+            margin-right: 5px; /* Отступ между иконкой и текстом */
+        }
+    </style>
+</head>
+<body>
+    <h1>All Production Plans</h1>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Production Plan ID</th>
+                <th>Operator</th>
+                <th>Time Limit (days)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for plan in production_plans.values() %}
+            <tr>
+                <td>{{ plan.production_plan_id }}</td>
+                <td>{{ plan.operator_id }}</td>
+                <td>{{ plan.time_limit_in_days }}</td>
+                <td><a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id) }}" class="button">View</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Кнопка "Домой" с иконкой -->
+    <a href="{{ url_for('home') }}" class="button">
+        <i class="fas fa-arrow-left"></i> Home
+    </a>
+</body>
+</html>

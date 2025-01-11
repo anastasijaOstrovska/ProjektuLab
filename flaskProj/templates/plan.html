@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Plan</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 80%;
+            margin: 20px auto;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Production Plan ID: {{ production_plan_id }}</h1>
+
+    <!-- Table for Book Details -->
+    <h2>Books Information</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Book</th>
+                <th>Min Amount</th>
+                <th>Max Amount</th>
+                <th>Production Cost ($)</th>
+                <th>Selling Price ($)</th>
+                <th>Production Time (min)</th>
+                <th>Profit per Hour ($)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in books_details %}
+                <tr>
+                    <td>{{ book.name }}</td>
+                    <td>{{ book.min_amount }}</td>
+                    <td>{{ book.max_amount }}</td>
+                    <td>{{ book.production_cost }}</td>
+                    <td>{{ book.selling_price }}</td>
+                    <td>{{ book.production_time }}</td>
+                    <td>{{ book.profit_per_hour }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Budget Information</h2>
+    <p>Minimum Budget: {{ min_budget }}</p>
+    <p>Maximum Budget: {{ max_budget }}</p>
+
+    {% if min_profit is not none %}
+        <p>Minimum Profit: {{ min_profit }}</p>
+    {% else %}
+        <p>Minimum Profit: Not calculated</p>
+    {% endif %}
+
+    {% if max_profit is not none %}
+        <p>Maximum Profit: {{ max_profit }}</p>
+    {% else %}
+        <p>Maximum Profit: Not calculated</p>
+    {% endif %}
+
+    <!-- Добавление информации о минимальном и максимальном количестве дней -->
+    <h2>Time Information</h2>
+    <p>Minimum Time: {{ total_days_min}} days</p>
+    <p>Maximum Time: {{ total_days_max}} days</p>
+
+    <form action="/calculate_with_budget" method="POST">
+        <label for="budget">Budget (from {{ min_budget }} to {{ max_budget }}):</label>
+        <input type="number" id="budget" name="budget" step="0.01" value="{{ min_budget }}" 
+               min="{{ min_budget }}" max="{{ max_budget }}" required>
+        <input type="hidden" name="production_plan_id" value="{{ production_plan_id }}">
+        <button type="submit">Calculate</button>
+    </form>
+
+    <!-- Поле для ввода ограничения по дням -->
+    <form action="/calculate_by_days" method="POST">
+        <label for="time_limit">Time Limit (days):</label>
+        <input type="number" id="time_limit" name="time_limit" step="1" min="{{ total_days_min}}" max="{{ total_days_max}}" required>
+        <input type="hidden" name="production_plan_id" value="{{ production_plan_id }}">
+        <button type="submit">Calculate by Days</button>
+    </form>
+
+    <div class="button-container">
+        <form action="{{ url_for('display_production_plan', production_plan_id=production_plan_id) }}" method="POST" style="display:inline;">
+            <input type="number" name="budget" value="{{ optimized_budget }}">
+            <button type="submit" class="btn">Optimize Budget</button>
+        </form>
+    </div>
+    <!-- Back to Plans Button -->
+    <a href="/plans">
+        <button>Back to Plans</button>
+    </a>
+</body>
+</html>

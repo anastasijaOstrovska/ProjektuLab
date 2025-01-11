@@ -32,7 +32,7 @@
             <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo-image" style="width: 50px; height: auto;">
             BobERP
         </div>
-        <div class="user-info">@{{ session['username'] }}</div>
+        <div class="user-info">{{ session['username'] }}@{{ session['role']}}</div>
     </div>
 </header>
 
@@ -45,9 +45,9 @@
         </button>
 
         <!-- Sidebar Links -->
-        <a href="{{ url_for('optimize_books') }}" class="sidebar-link" onclick="activateLink(event)">
+        <a href="{{ url_for('display_plans') }}" class="sidebar-link" onclick="activateLink(event)">
             <i class="fas fa-chart-line"></i>
-            <span>Optimization</span>
+            <span>Plans</span>
         </a>
         <a href="{{ url_for('books') }}" class="sidebar-link" onclick="activateLink(event)">
             <i class="fas fa-book"></i>

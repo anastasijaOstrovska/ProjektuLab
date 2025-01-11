@@ -13,7 +13,8 @@ from datetime import timedelta
 from flask_session import Session
 from optimize_parallel_test import optimize_production_with_dependencies
 from collections import defaultdict
-
+from models import Machine, Book, ProductionPlan
+from math import ceil
 
 
 app = Flask(__name__)
@@ -45,6 +46,19 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+def get_role():
+    username = session.get('username')
+    if username:
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT role_id FROM users WHERE username = %s", (username,))
+        role_id = cursor.fetchone()
+        cursor.close()
+
+        if role_id:
+            role = get_user_role(role_id[0])  # Получаем роль по role_id
+        else:
+            role = 'unknown'  # На случай, если роль не найдена
+    return(role)
 
 @app.route('/')
 def home():
@@ -84,6 +98,7 @@ def register():
             cursor.execute("INSERT INTO employees (name, surname, personal_code, phone_number, email, user_id) VALUES (%s, %s, %s, %s, %s, %s)", (name, surname, personal_code, phone_number, email, user_id))
             mysql.connection.commit()
             session['username'] = username  # Добавляем пользователя в сессию
+            session['role'] = get_role()
             session.permanent = True
             return redirect(url_for('main'))  # Перенаправляем на main
         except Exception as e:
@@ -105,6 +120,7 @@ def login():
         if result and check_password_hash(result[0], password):
             session.clear()
             session['username'] = username
+            session['role'] = get_role()
             session.permanent = True
             return redirect(url_for('main'))  # Изменено с optimize_books на main
         return 'Invalid username or password.'
@@ -133,150 +149,6 @@ def calculate_days_needed(books, is_max):
         total_time += quantity * book['time_per_book']
     return total_time / 8  # Transpose into days (8 working hours)
 
-@app.route('/optimize_books', methods=['GET', 'POST'])
-@login_required
-
-
-def optimize_books():
-    cursor = mysql.connection.cursor()
-
-    try:
-        # Получаем бюджет и общее время из формы
-        budget = float(request.form.get('budget', 0))
-        total_days = int(request.form.get('total_days', 0))
-        total_time_available = total_days * 8 * 60  # Преобразуем дни в минуты (например, 8-часовой рабочий день)
-
-        # Fetch necessary data from the database
-        cursor.execute("SELECT book_id, selling_price FROM books")
-        books = cursor.fetchall()
-
-        # Преобразуем кортежи в словари
-        books = [
-            {
-                'book_id': book[0],
-                'selling_price': book[1]
-            }
-            for book in books
-        ]
-
-        cursor.execute("SELECT hardware_id, capacity FROM hardwares")
-        hardwares = cursor.fetchall()
-
-        cursor.execute(
-            "SELECT book_id, hardware_id, production_time_in_minutes, order_in_queue "
-            "FROM book_hardwares ORDER BY order_in_queue"
-        )
-        book_hardwares = cursor.fetchall()
-
-        # Prepare data structures
-        book_prices = {book['book_id']: book['selling_price'] for book in books}
-        hardware_capacity = {hw[0]: hw[1] for hw in hardwares}
-        hardware_usage = defaultdict(list)  # To track hardware usage
-
-        # Organize book-hardware mappings
-        book_to_hardwares = defaultdict(list)
-        for bh in book_hardwares:
-            book_to_hardwares[bh[0]].append({
-                'hardware_id': bh[1],
-                'production_time': bh[2],
-                'order': bh[3]
-            })
-
-        # Priority queue to simulate parallel machine operation
-        hardware_queue = [(0, hw_id) for hw_id in hardware_capacity.keys()]  # (end_time, hardware_id)
-        heapq.heapify(hardware_queue)
-
-        total_profit = 0
-        total_production_time = 0  # Общее время производства
-        production_log = []
-
-        for book_id, hardwares in book_to_hardwares.items():
-            hardwares = sorted(hardwares, key=lambda x: x['order'])
-            book_start_time = 0
-
-            for hw in hardwares:
-                hw_id = hw['hardware_id']
-                production_time = hw['production_time']
-
-                # Find the next available time slot for the required hardware
-                while hardware_queue:
-                    end_time, current_hw_id = heapq.heappop(hardware_queue)
-                    if current_hw_id == hw_id:
-                        break
-
-                # Calculate start and end time for this hardware operation
-                start_time = max(book_start_time, end_time)
-                end_time = start_time + production_time
-
-                # Log the usage
-                hardware_usage[hw_id].append({
-                    'book_id': book_id,
-                    'start_time': start_time,
-                    'end_time': end_time
-                })
-
-                # Push the hardware back into the queue with its updated end time
-                heapq.heappush(hardware_queue, (end_time, hw_id))
-
-                # Update book_start_time for the next operation in sequence
-                book_start_time = end_time
-
-            # Calculate profit for this book
-            total_profit += book_prices.get(book_id, 0)  # Use .get() to avoid KeyError
-            production_log.append({
-                'book_id': book_id,
-                'profit': book_prices.get(book_id, 0)
-            })
-
-            # Обновляем общее время производства
-            total_production_time += sum(hw['production_time'] for hw in hardwares)
-
-        # Проверка на укладывание в бюджет и время
-        if total_profit > budget:
-            print("Превышен бюджет!")
-            return render_template('optimize_books.html', books=books, min_budget=0, min_time=0, error="Превышен бюджет!")
-
-        if total_production_time > total_time_available:
-            print("Превышено доступное время!")
-            return render_template('optimize_books.html', books=books, min_budget=0, min_time=0, error="Превышено доступное время!")
-
-        # Prepare output summary
-        hardware_summary = {
-            hw_id: [
-                {
-                    'book_id': log['book_id'],
-                    'start_time': log['start_time'],
-                    'end_time': log['end_time']
-                } for log in logs
-            ] for hw_id, logs in hardware_usage.items()
-        }
-
-        summary = {
-            'total_profit': total_profit,
-            'hardware_usage': hardware_summary,
-            'production_log': production_log
-        }
-
-        # Print the summary instead of returning
-        print("Total Profit:", summary['total_profit'])
-        print("\nHardware Usage:")
-        for hw_id, logs in hardware_summary.items():
-            print(f"Hardware {hw_id}:")
-            for log in logs:
-                print(f"  Book ID: {log['book_id']}, Start Time: {log['start_time']}, End Time: {log['end_time']}")
-        print("\nProduction Log:")
-        for log in production_log:
-            print(f"Book ID: {log['book_id']}, Profit: {log['profit']}")
-
-        return render_template('optimize_books.html', books=books, min_budget=0, min_time=0)
-
-    except Exception as e:
-        print(f"Error occurred: {e}")
-        return render_template('optimize_books.html', books=[], min_budget=0, min_time=0)  # Возвращаем пустой список книг в случае ошибки
-    finally:
-        cursor.close()  # Ensure the cursor is closed
-
-
 @app.route('/books', methods=['GET'])
 @login_required
 def books():
@@ -298,48 +170,6 @@ def books():
 
     return render_template('books.html', books=books)
 
-# @app.route('/edit_book/<book_id>', methods=['GET', 'POST'])
-# @login_required
-# def edit_book(book_id):
-#     cursor = mysql.connection.cursor()
-#
-#     # if POST, update
-#     if request.method == 'POST':
-#         name = request.form['name']
-#         description = request.form['description']
-#         selling_price = request.form['selling_price']
-#
-#
-#         cursor.execute("""
-#             UPDATE books
-#             SET  name = %s, description = %s, selling_price = %s
-#             WHERE book_id = %s;
-#         """, (name, description,selling_price, book_id))
-#
-#         mysql.connection.commit()
-#         cursor.close()
-#         return redirect(url_for('books'))
-#
-#     # if GET show existing data
-#     cursor.execute("""SELECT
-#                       b.book_id, b.name, b.description, b.selling_price
-#                       FROM books b
-#                       where b.book_id = %s""", (book_id,))
-#     books_list1 = cursor.fetchall()
-#     print(books_list1, book_id)
-#          # You can now pass these data to your template or further processing
-#     books1 = []
-#     for book in books_list1:
-#
-#         books1.append({
-#             'id': book[0],
-#             'name': book[1],
-#             'description': book[2],
-#             'selling_price': book[3]
-#         })
-#    # cursor.close()
-#     print(books1, book_id)
-#     return render_template('edit_book.html', book=books1[0])
 
 @app.route('/edit_book/<int:book_id>', methods=['GET'])
 @login_required
@@ -1068,6 +898,488 @@ def delete_machine(machine_id):
     cursor.close()
     
     return f"Machine was successfully deleted"
+
+#########################################################################################################
+#########################################################################################################
+#########################################################################################################
+###########################################OPTIMIZATION PART#############################################
+#########################################################################################################
+#########################################################################################################
+#########################################################################################################
+
+def fetch_books_and_machines():
+    cursor = mysql.connection.cursor()
+
+    # Get data about books
+    cursor.execute(""" 
+        SELECT book_id, name, selling_price FROM books;
+    """)
+    books_data = cursor.fetchall()
+
+    # Get data about machines
+    cursor.execute(""" 
+        SELECT hardware_id, name, type, capacity FROM hardwares;
+    """)
+    machines_data = cursor.fetchall()
+
+    # Get production plans
+    cursor.execute(""" 
+        SELECT production_plan_id, operator_id, time_limit_in_days FROM production_plan;
+    """)
+    production_plan_data = cursor.fetchall()
+
+    # Get books in production plans
+    cursor.execute(""" 
+        SELECT production_plan_book_id, book_id, book_amount_min, book_amount_max, production_plan_id
+        FROM production_plan_books;
+    """)
+    production_plan_books_data = cursor.fetchall()
+
+    # Get materials for each book
+    cursor.execute(""" 
+        SELECT book_id, material_id, material_quantity 
+        FROM book_materials;
+    """)
+    book_materials_data = cursor.fetchall()
+
+    # Get production time for each book and each machine
+    cursor.execute(""" 
+        SELECT book_id, hardware_id, production_time_in_minutes 
+        FROM book_hardwares;
+    """)
+    book_hardwares_data = cursor.fetchall()
+
+    books = {}
+    for book_id, name, selling_price in books_data:
+        books[book_id] = Book(book_id, name, selling_price, [], 0, 0)
+
+    machines = {}
+    for hardware_id, name, type, capacity in machines_data:
+        machines[hardware_id] = Machine(hardware_id, name, type, capacity)
+
+    production_plans = {}
+    for production_plan_id, operator_id, time_limit_in_days in production_plan_data:
+        production_plans[production_plan_id] = ProductionPlan(production_plan_id, operator_id, time_limit_in_days)
+
+    # Bind books to plans considering their order in the production_plan_books table
+    for production_plan_book_id, book_id, book_amount_min, book_amount_max, production_plan_id in production_plan_books_data:
+        if book_id in books and production_plan_id in production_plans:
+            book = books[book_id]
+            book.min_amount = book_amount_min
+            book.max_amount = book_amount_max
+            # Add books to plan in the order they appear
+            production_plans[production_plan_id].books.append(book)
+
+    # Bind equipment to books
+    for book in books.values():
+        book.hardware_sequence = [
+            (hardware_id, production_time) for book_id, hardware_id, production_time in book_hardwares_data if book_id == book.book_id
+        ]
+        book.production_time = sum(time for _, time in book.hardware_sequence)
+
+    # Fill in information about materials for books
+    for book_id, material_id, material_quantity in book_materials_data:
+        if book_id in books:
+            cursor.execute(""" 
+                SELECT cost_per_piece FROM materials WHERE material_id = %s;
+            """, [material_id])
+            material_cost = cursor.fetchone()[0]
+            total_material_cost = material_quantity * material_cost
+            books[book_id].production_cost += total_material_cost
+
+    # Calculate profit per minute for each book
+    for book in books.values():
+        book.calculate_profit_per_minute()
+
+    cursor.close()
+    return books, machines, production_plans
+
+
+def calculate_budget_and_profit(production_plan_id, production_plans, books, machines, use_min_amount=False):
+    plan = production_plans.get(production_plan_id)
+    if not plan:
+        return None, None, None, [], 0, 0
+
+    min_budget = 0
+    max_budget = 0
+    total_production_cost = 0
+    total_sales = 0
+    schedule_details = []  # For storing information about time intervals for each book and stage
+
+    # For tracking when machines will be free
+    machine_availability = {machine.hardware_id: 0 for machine in machines.values()}
+
+    # For calculating minimum and maximum production time
+    min_time = 0  # Minimum production time for the entire plan
+    max_time = 0  # Maximum production time for the entire plan
+
+    # Calculate minimum budget
+    # Calculate maximum budget
+   
+    for book in plan.books:
+        min_budget += book.production_cost * book.min_amount
+        max_budget += book.production_cost * book.max_amount
+   
+    sorted_books= sorted(plan.books, key=lambda b: b.profit_per_minute, reverse=True)
+    for book in sorted_books:
+        # Use min_amount or max_amount depending on the flag
+        book_amount = book.min_amount if use_min_amount else book.max_amount
+
+        total_production_cost += book.production_cost * book_amount
+        total_sales += book.selling_price * book_amount
+
+        # Start time for each book will depend on the last completed stage
+        book_start_time = 0  # Start from zero minutes
+
+        # For each book, consider its stages on different machines
+        for hardware_id, production_time in book.hardware_sequence:
+            available_at = max(book_start_time, machine_availability[hardware_id])  # Machine can start only when it's free
+            start_time = available_at
+            finish_time = start_time + production_time * book_amount
+
+            # Add information about time interval for this stage
+            schedule_details.append({
+                'book_name': book.name,
+                'hardware_name': machines[hardware_id].name,
+                'start_time': start_time,
+                'finish_time': finish_time,
+                'production_time': production_time * book_amount
+            })
+
+            # Update when machine will be free
+            machine_availability[hardware_id] = finish_time
+
+            # Update start time for next stage of this book
+            book_start_time = finish_time
+
+            # Calculate minimum and maximum time for current stage
+            min_time = max(min_time, finish_time)
+            max_time = max(max_time, finish_time)
+
+    # Convert time to days
+    total_days_min = min_time / (24 * 60)  # Minimum time in days
+    total_days_max = max_time / (24 * 60)  # Maximum time in days
+
+    # Calculate profit
+    profit = total_sales - total_production_cost
+
+    return min_budget, max_budget, profit, total_days_max, total_days_min, schedule_details
+
+@app.route('/plans')
+@login_required
+def display_plans():
+    # Get the list of all production plans from the database
+    books, machines, production_plans = fetch_books_and_machines()
+
+    return render_template('plans.html', production_plans=production_plans)
+
+
+@app.route('/<int:production_plan_id>', methods=['GET', 'POST'])
+@login_required
+def display_production_plan(production_plan_id):
+    books, machines, production_plans = fetch_books_and_machines()
+    plan = production_plans.get(production_plan_id)
+    if not plan:
+        return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
+
+    # Получаем минимальный и максимальный бюджет
+    min_budget, max_budget = plan.calculate_budget(books)
+    optimized_budget = min_budget
+    # Проверяем, был ли отправлен POST-запрос для оптимизации бюджета
+    if request.method == 'POST':
+        optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id)  # Оптимизируем бюджет
+        print(optimized_budget)
+    
+    # Prepare books information for the table
+    books_details = []
+    for book in production_plans[production_plan_id].books:
+        production_time = book.production_time  # время производства одной единицы книги в часах
+        profit_per_unit = book.selling_price - book.production_cost
+        profit_per_hour = profit_per_unit / production_time if production_time > 0 else 0
+
+        books_details.append({
+            "name": book.name,
+            "min_amount": book.min_amount,
+            "max_amount": book.max_amount,
+            "production_cost": book.production_cost,
+            "selling_price": book.selling_price,
+            "production_time": round(production_time, 2),  # округление до 2 знаков
+            "profit_per_hour": round(profit_per_hour, 2)  # округление до 2 знаков
+        })
+
+    # Get budget and profit details
+
+    min_budget, max_budget, profit, total_days_max, total_days_min, schedule_details_max = calculate_budget_and_profit(
+        production_plan_id, production_plans, books, machines)
+    min_budget1, max_budget1, profit1, total_days_max1, total_days_min, schedule_details_max1 = calculate_budget_and_profit(
+        production_plan_id, production_plans, books, machines, True)
+
+    if min_budget is None:
+        return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
+
+    # Calculate minimum and maximum profit
+    min_profit = sum((book.selling_price - book.production_cost) * book.min_amount
+                     for book in production_plans[production_plan_id].books)
+    max_profit = sum((book.selling_price - book.production_cost) * book.max_amount
+                     for book in production_plans[production_plan_id].books)
+
+    # Pass data to the template
+    return render_template(
+        'plan.html',
+        production_plan_id=production_plan_id,
+        books_details=books_details,  # Add book details for table
+        min_budget=min_budget,
+        max_budget=max_budget,
+        profit=profit,
+        min_profit=min_profit,
+        max_profit=max_profit,
+        total_days_min=ceil(total_days_min),
+        total_days_max=ceil(total_days_max),
+        optimized_budget=optimized_budget  # Передаем текущий бюджет
+    )
+
+@app.route('/calculate_with_budget', methods=['POST'])
+@login_required
+def calculate_with_budget():
+    # Get data from the form
+    budget = Decimal(request.form['budget'])  # Convert to Decimal
+    production_plan_id = int(request.form['production_plan_id'])
+
+    books, machines, production_plans = fetch_books_and_machines()
+    plan = production_plans.get(production_plan_id)
+    if not plan:
+        return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
+
+    # First, fill in the budget for each book considering the minimum amount
+    selected_books = []
+    total_cost = Decimal(0)  # Use Decimal for precise calculations
+    remaining_budget = budget
+
+    # Sort books by profit_per_minute priority (descending)
+    sorted_books = sorted(plan.books, key=lambda b: b.profit_per_minute, reverse=True)
+
+    # 1. First, add the minimum amount of each book if the budget allows
+    for book in sorted_books:
+        min_cost = Decimal(book.production_cost) * book.min_amount  # Cost of minimum amount of book
+
+        if remaining_budget >= min_cost:  # Check if we can run minimum amount
+            selected_books.append((book, book.min_amount))
+            remaining_budget -= min_cost  # Reduce remaining budget
+        else:
+            # If there is no budget for the minimum amount of the book, skip this book
+            continue
+
+    # 2. After that, if there is room in the budget, add additional books by profitability
+    for book in sorted_books:
+        if any(selected_book[0] == book for selected_book in selected_books):  # If book has already been added
+            already_added_amount = next(amount for selected_book, amount in selected_books if selected_book == book)
+            max_possible_amount = book.max_amount - already_added_amount
+
+            if max_possible_amount > 0:  # Only proceed if there is room to add more
+                # Check if there is enough budget for the maximum amount
+                max_cost = Decimal(book.production_cost) * max_possible_amount  # Cost of maximum amount of book
+
+                if remaining_budget >= max_cost:  # If there is enough budget for the maximum amount
+                    selected_books = [(selected_book, amount + max_possible_amount) if selected_book == book else (selected_book, amount) for selected_book, amount in selected_books]
+                    remaining_budget -= max_cost  # Reduce remaining budget
+                else:
+                    # If there is not enough budget, add as much as we can
+                    possible_amount = remaining_budget // Decimal(book.production_cost)
+                    if possible_amount > 0:
+                        selected_books = [(selected_book, amount + possible_amount) if selected_book == book else (selected_book, amount) for selected_book, amount in selected_books]
+                        remaining_budget -= possible_amount * Decimal(book.production_cost)
+
+    # Calculate time and profit for the selected books
+    machine_availability = {machine.hardware_id: 0 for machine in machines.values()}
+    schedule_details = []
+    profit = Decimal(0)  # Use Decimal for precise calculations
+    for book, amount in selected_books:
+        book_start_time = 0
+        for hardware_id, production_time in book.hardware_sequence:
+            available_at = max(book_start_time, machine_availability[hardware_id])
+            start_time = available_at
+            finish_time = start_time + production_time * amount
+            schedule_details.append({
+                'book_name': book.name,
+                'hardware_name': machines[hardware_id].name,
+                'start_time': start_time,
+                'finish_time': finish_time,
+                'production_time': production_time * amount
+            })
+            machine_availability[hardware_id] = finish_time
+            book_start_time = finish_time
+        profit += (book.selling_price - book.production_cost) * amount
+
+    # Pass data to the result
+    return render_template(
+        'result.html',
+        budget=budget,
+        profit=profit,
+        selected_books=selected_books,
+        schedule_details=schedule_details,
+        total_days=ceil(finish_time/24/60)
+    )
+
+@app.route('/calculate_by_days', methods=['POST'])
+@login_required
+def calculate_by_days():
+    production_plan_id = int(request.form['production_plan_id'])
+
+    # Получаем данные о планах, книгах и машинах
+    books, machines, production_plans = fetch_books_and_machines()
+
+    plan = production_plans.get(production_plan_id)
+
+    if not plan:
+        return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
+
+    # Получаем минимальный бюджет
+    min_budget, max_budget = plan.calculate_budget(books)
+
+    # Получаем лимит по дням из формы
+    time_limit_days = int(request.form['time_limit'])  
+    budget = min_budget
+    # Начинаем с минимального бюджета
+    budget, profit, selected_books, schedule_details, total_days_max = calculate_budget_with_time_limit(
+            production_plan_id, production_plans, books, machines, budget)
+    while not (time_limit_days * 0.99 <= total_days_max <= time_limit_days * 1.01):
+
+        # Проверяем, превышает ли бюджет максимальное значение
+        if budget * Decimal(1.0025) > max_budget:
+
+            budget = max_budget  # Используем максимальный бюджет
+            break  # Выходим из цикла
+        else:
+            budget = round(budget * Decimal(1.0025))
+        # Вызываем новую функцию для расчета бюджета с учетом времени
+        budget1, profit, selected_books, schedule_details, total_days_max = calculate_budget_with_time_limit(
+            production_plan_id, production_plans, books, machines, budget)
+
+
+    # Возврат результата
+    return render_template(
+        'result.html',
+        budget=budget,
+        profit=profit,
+        selected_books=selected_books,
+        schedule_details=schedule_details,
+        total_days = ceil(total_days_max)
+        )
+
+def calculate_budget_with_time_limit(production_plan_id, production_plans, books, machines, budget):
+    
+    books, machines, production_plans = fetch_books_and_machines()
+    plan = production_plans.get(production_plan_id)
+    if not plan:
+        return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
+
+    # First, fill in the budget for each book considering the minimum amount
+    selected_books = []
+    total_cost = Decimal(0)  # Use Decimal for precise calculations
+    remaining_budget = budget
+
+    # Sort books by profit_per_minute priority (descending)
+    sorted_books = sorted(plan.books, key=lambda b: b.profit_per_minute, reverse=True)
+
+    # 1. First, add the minimum amount of each book if the budget allows
+    for book in sorted_books:
+        min_cost = Decimal(book.production_cost) * book.min_amount  # Cost of minimum amount of book
+
+        if remaining_budget >= min_cost:  # Check if we can run minimum amount
+            selected_books.append((book, book.min_amount))
+            remaining_budget -= min_cost  # Reduce remaining budget
+        else:
+            # If there is no budget for the minimum amount of the book, skip this book
+            continue
+
+    # 2. After that, if there is room in the budget, add additional books by profitability
+    for book in sorted_books:
+        if any(selected_book[0] == book for selected_book in selected_books):  # If book has already been added
+            already_added_amount = next(amount for selected_book, amount in selected_books if selected_book == book)
+            max_possible_amount = book.max_amount - already_added_amount
+
+            if max_possible_amount > 0:  # Only proceed if there is room to add more
+                # Check if there is enough budget for the maximum amount
+                max_cost = Decimal(book.production_cost) * max_possible_amount  # Cost of maximum amount of book
+
+                if remaining_budget >= max_cost:  # If there is enough budget for the maximum amount
+                    selected_books = [(selected_book, amount + max_possible_amount) if selected_book == book else (selected_book, amount) for selected_book, amount in selected_books]
+                    remaining_budget -= max_cost  # Reduce remaining budget
+                else:
+                    # If there is not enough budget, add as much as we can
+                    possible_amount = remaining_budget // Decimal(book.production_cost)
+                    if possible_amount > 0:
+                        selected_books = [(selected_book, amount + possible_amount) if selected_book == book else (selected_book, amount) for selected_book, amount in selected_books]
+                        remaining_budget -= possible_amount * Decimal(book.production_cost)
+
+    # Calculate time and profit for the selected books
+    machine_availability = {machine.hardware_id: 0 for machine in machines.values()}
+    schedule_details = []
+    profit = Decimal(0)  # Use Decimal for precise calculations
+    for book, amount in selected_books:
+        book_start_time = 0
+        for hardware_id, production_time in book.hardware_sequence:
+            available_at = max(book_start_time, machine_availability[hardware_id])
+            start_time = available_at
+            finish_time = start_time + production_time * amount
+            schedule_details.append({
+                'book_name': book.name,
+                'hardware_name': machines[hardware_id].name,
+                'start_time': start_time,
+                'finish_time': finish_time,
+                'production_time': production_time * amount
+            })
+            machine_availability[hardware_id] = finish_time
+            book_start_time = finish_time
+        profit += (book.selling_price - book.production_cost) * amount
+    total_days_max = finish_time/60/24
+    # Pass data to the result
+    return(
+        budget,
+        profit,
+        selected_books,
+        schedule_details,
+        total_days_max
+    )
+
+def optimize_budget(budget, max_budget, production_plans, production_plan_id):
+
+    # Получаем данные о планах, книгах и машинах
+    books, machines, production_plans = fetch_books_and_machines()
+
+    plan = production_plans.get(production_plan_id)
+    if not plan:
+        return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
+
+    best_budget=budget;
+    koef = 0
+    bestkoef = 0
+    while budget < max_budget:
+        print(budget, '$')
+        budget1, profit, selected_books, schedule_details, total_days_max = calculate_budget_with_time_limit(
+            production_plan_id, production_plans, books, machines, budget)
+        print("Koef", profit/budget)
+        if profit/budget > koef:
+            koef = profit/budget
+            bestkoef = koef
+            best_budget = budget
+        if budget * Decimal(1.001) <= max_budget:
+            budget = budget * Decimal(1.001)
+        else:
+            budget = max_budget
+    #print("BestKoef",bestkoef)
+    #print("BestBudget",best_budget)
+    return round(best_budget)
+
+def get_user_role(user_id):
+    if user_id == 1:
+        return 'admin'
+    elif user_id == 2:
+        return 'operator'
+    elif user_id == 3:
+        return 'manager'
+    else:
+        return 'unknown'  # На случай, если id не соответствует ни одной роли
 
 if __name__ == '__main__':
     # Очищаем сессии при запуске

@@ -3,104 +3,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optimization Result</title>
+    <title>Calculation Results</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* General styles */
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
+            margin: 20px;
+            background-color: #f4f4f9;
         }
-        .container {
+
+        h1, h2, h3 {
+            color: #333;
+        }
+
+        table {
             width: 80%;
-            margin: auto;
-            overflow: hidden;
-            padding: 20px;
+            margin: 20px auto;
+            border-collapse: collapse;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        header {
-            background: #35424a;
-            color: #ffffff;
-            padding-top: 30px;
-            min-height: 70px;
-            border-bottom: #007bff 3px solid;
-        }
-        header h1 {
-            margin: 0;
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
             text-align: center;
-            padding-bottom: 20px;
         }
 
-        .result-container {
-            background: #ffffff;
-            margin: 30px auto;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        table th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        canvas {
+            max-width: 800px;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 20px;
+        }
+
+        .btn {
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
             border-radius: 5px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
-        .result-container h2 {
-            text-align: center;
-            color: #35424a;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            margin-bottom: 10px;
-        }
-        .statistics, .machine-stats {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
+
+        .btn:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Optimization Result</h1>
-        </div>
-    </header>
+    <h1>Calculation Results</h1>
+    <h2>Selected Budget: {{ budget }} $</h2>
+    <h3>Total days: {{ total_days }}</h3>
+    <h3>Profit: {{ profit }} $</h3>
 
-    <div class="container">
-        <div class="result-container">
-            <h2>Book Production Plan</h2>
-            <ul>
-                {% for book_name, quantity in result['quantities'].items() %}
-                <li><strong>{{ book_name }}:</strong> Produce {{ quantity }} units</li>
-                {% endfor %}
-            </ul>
+    <h3>Books Selected for Production</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Book</th>
+                <th>Amount Selected</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book, amount in selected_books %}
+            <tr>
+                <td>{{ book.name }}</td>
+                <td>{{ amount }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-            <div class="statistics">
-                <h2>Statistics</h2>
-                <p><strong>Total books produced:</strong> {{ result['total_books'] }}</p>
-                <p><strong>Gross income:</strong> ${{ result['gross_income'] }}</p>
-                <p><strong>Net income (after material costs):</strong> ${{ result['net_income'] }}</p>
-            </div>
+    <h3>Production Schedule</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Book</th>
+                <th>Hardware</th>
+                <th>Start Time</th>
+                <th>Finish Time</th>
+                <th>Production Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detail in schedule_details %}
+            <tr>
+                <td>{{ detail.book_name }}</td>
+                <td>{{ detail.hardware_name }}</td>
+                <td>{{ detail.start_time }}</td>
+                <td>{{ detail.finish_time }}</td>
+                <td>{{ detail.production_time }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <h3>Production Overview</h3>
+    <canvas id="productionChart"></canvas>
+    
+    <script>
+        // Production Chart
+        const productionData = {
+            labels: [{% for book, amount in selected_books %}"{{ book.name }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Books Produced',
+                data: [{% for book, amount in selected_books %}{{ amount }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+    
+        const productionConfig = {
+            type: 'bar',
+            data: productionData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        onClick: (e, legendItem, legend) => {
+                            // Toggle dataset visibility
+                            const index = legendItem.datasetIndex;
+                            const chart = legend.chart;
+                            const meta = chart.getDatasetMeta(index);
+    
+                            meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+                            chart.update();
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+    
+        new Chart(document.getElementById('productionChart'), productionConfig);
+    </script>
+    
+    <h3>Graphs</h3>
+    <canvas id="profitChart"></canvas>
+    <canvas id="scheduleChart"></canvas>
+    <canvas id="hoursChart"></canvas>
 
-            <div class="machine-stats">
-                <h2>Machine Statistics</h2>
-                <ul>
-                    {% for machine_id, stats in result['machine_stats'].items() %}
-                    <li>
-                        <strong>Machine {{ machine_id }}:</strong>
-                        <ul>
-                            <li>Total time worked: {{ stats['time_worked'] / 60 }} hours</li>
-                            <li>Task order:</li>
-                            <ul>
-                                {% for task in stats['task_order'] %}
-                                <li>{{ task }}</li>
-                                {% endfor %}
-                            </ul>
-                        </ul>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
+    <div class="button-container">
+        <a href="/plans" class="btn">Back to Plans</a>
     </div>
+
+    <script>
+        // Profit Chart
+        const profitData = {
+            labels: [{% for book, amount in selected_books %}"{{ book.name }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Profit per Book',
+                data: [{% for book, amount in selected_books %}{{ (book.selling_price - book.production_cost) * amount }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        new Chart(document.getElementById('profitChart'), {
+            type: 'bar',
+            data: profitData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        // Schedule Chart
+        const scheduleData = {
+            labels: [{% for detail in schedule_details %}"{{ detail.hardware_name }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Production Time (minutes)',
+                data: [{% for detail in schedule_details %}{{ detail.production_time }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        new Chart(document.getElementById('scheduleChart'), {
+            type: 'line',
+            data: scheduleData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        // Hours Chart
+        const hoursData = {
+            labels: [{% for detail in schedule_details %}"{{ detail.hardware_name }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Hours Used',
+                data: [{% for detail in schedule_details %}{{ detail.production_time / 60 }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        new Chart(document.getElementById('hoursChart'), {
+            type: 'bar',
+            data: hoursData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
