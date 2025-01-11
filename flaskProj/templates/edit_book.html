@@ -4,30 +4,359 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Book</title>
-    <link href="{{ url_for('static', filename='style_edit.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style_changes.css') }}" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-<div class="container">
+<div class="container" style="max-width: 800px;">
     <a href="{{ url_for('books') }}">
         <button type="button">
             <i class="fas fa-arrow-left fa-1.5x"></i>
         </button>
     </a>
     <h2>Edit Book</h2>
-    <form method="POST">
+    <form method="POST" onsubmit="return confirm('Are you sure you want to save changes?');">
+        <!-- Поля для редактирования книги -->
         <label for="name">Name:</label>
         <input type="text" name="name" id="name" value="{{ book.name }}" required>
 
         <label for="description">Description:</label>
-        <input type="text" name="description" id="description" value="{{ book.description }}" >
+        <textarea name="description" id="description" rows="3" style="resize: none;">{{ book.description }}</textarea>
 
         <label for="selling_price">Selling Price:</label>
         <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" name="selling_price" id="selling_price" value="{{ book.selling_price }}" required>
 
-        <button type="submit">Save Changes</button>
+        <!-- Таблица материалов -->
+        <div class="table-container">
+            <div class="header-container">
+                <h3>Materials</h3>
+                <button type="button" class="table-btn" id="add-material-btn">Add Material</button>
+            </div>
+            <table id="materials-table">
+                <thead>
+                <tr>
+                    <th>Material Type</th>
+                    <th>Material Name</th>
+                    <th>Required Quantity</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for material in book.materials %}
+                <tr>
+                    <input type="hidden" name="book_material_id[]" value="{{material.book_material_id}}">
+                    <input type="hidden" name="material_row_status[]" value="unchanged">
+                    <td>
+                        <select class="material-type" required>
+                            {% for type, materials in materials_options.items() %}
+                            <option value="{{ type }}" {% if material.type == type %}selected{% endif %}>{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <select name="material_id[]" class="material-name" data-selected="{{ material.id }}">
+                            {% for material_option in materials_options[material.type] %}
+                            <option value="{{ material_option.id }}" {% if material_option.id == material.id %}selected{% endif %}>
+                                {{ material_option.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="quantity[]" value="{{ material.quantity }}" required>
+                    </td>
+                    <td>
+                        <button type="button" class="delete-row-btn">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
+        <!-- Таблица машин -->
+        <div class="table-container">
+            <div class="header-container">
+                <h3>Machines</h3>
+                <button type="button" class="table-btn" id="add-machine-btn">Add Machine</button>
+            </div>
+            <table id="machines-table">
+                <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Machine Type</th>
+                    <th>Machine Name</th>
+                    <th>Production Time (minutes)</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for machine in book.machines %}
+                <tr>
+                    <input type="hidden" name="book_machine_id[]" value="{{machine.book_hardware_id}}">
+                    <input type="hidden" name="machine_row_status[]" value="unchanged">
+                    <td class="row-number">{{ loop.index }}</td>
+                    <td>
+                        <select class="machine-type" required>
+                            {% for type, machines in machines_options.items() %}
+                            <option value="{{ type }}" {% if machine.type == type %}selected{% endif %}>{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <select name="machine_id[]" class="machine-name" data-selected="{{ machine.id }}">
+                            {% for machine_option in machines_options[machine.type] %}
+                            <option value="{{ machine_option.id }}" {% if machine_option.id == machine.id %}selected{% endif %}>
+                                {{ machine_option.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="production_time[]" value="{{ machine.production_time }}" required>
+                    </td>
+                    <td>
+                        <button type="button" class="delete-row-btn">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <button type="submit">Save Changes</button>
     </form>
+
 </div>
+<script>
+    // Material table logic
+    const materialOptions = {{ materials_options | tojson }};
+    const materialsTable = document.getElementById('materials-table').querySelector('tbody');
+    const addMaterialBtn = document.getElementById('add-material-btn');
+
+    // Populate material rows with existing data
+    [...materialsTable.rows].forEach((row) => {
+        const materialTypeSelect = row.querySelector('.material-type');
+        const materialNameSelect = row.querySelector('.material-name');
+        const selectedType = materialTypeSelect.value;
+
+        materialTypeSelect.addEventListener('change', () => {
+            const type = materialTypeSelect.value;
+            populateMaterialNames(materialNameSelect, type);
+        });
+
+        populateMaterialNames(materialNameSelect, selectedType);
+    });
+
+    // Function to populate material names based on the selected type
+    function populateMaterialNames(materialNameSelect, type) {
+        materialNameSelect.innerHTML = `
+        <option value="" disabled>Select Material</option>
+        ${materialOptions[type]?.map(material =>
+            `<option value="${material.id}" ${
+                materialNameSelect.getAttribute('data-selected') == material.id ? 'selected' : ''
+            }>${material.name}</option>`
+        ).join('') || ''}
+    `;
+        materialNameSelect.disabled = !type;
+    }
+
+    // Add new material row
+    addMaterialBtn.addEventListener('click', () => {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+        <input type="hidden" name="book_material_id[]" value="new">
+        <input type="hidden" name="material_row_status[]" value="new">
+        <td>
+            <select class="material-type" required>
+                <option value="" disabled selected>Select Type</option>
+                ${Object.keys(materialOptions).map(type => `<option value="${type}">${type}</option>`).join('')}
+            </select>
+        </td>
+        <td>
+            <select name="material_id[]" class="material-name" disabled>
+                <option value="" disabled selected>Select Material</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="quantity[]" required>
+        </td>
+        <td>
+            <button type="button" class="delete-row-btn">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </td>
+    `;
+
+        materialsTable.appendChild(row);
+
+        const materialTypeSelect = row.querySelector('.material-type');
+        const materialNameSelect = row.querySelector('.material-name');
+
+        materialTypeSelect.addEventListener('change', () => {
+            const selectedType = materialTypeSelect.value;
+            populateMaterialNames(materialNameSelect, selectedType);
+        });
+
+        row.querySelector('.delete-row-btn').addEventListener('click', () => {
+            materialsTable.removeChild(row);
+        });
+    });
+
+    // Machine table logic
+    const machineOptions = {{ machines_options | tojson }};
+    const machinesTable = document.getElementById('machines-table').querySelector('tbody');
+    const addMachineBtn = document.getElementById('add-machine-btn');
+
+    // Populate machine rows with existing data
+    [...machinesTable.rows].forEach((row, index) => {
+        const machineTypeSelect = row.querySelector('.machine-type');
+        const machineNameSelect = row.querySelector('.machine-name');
+        const selectedType = machineTypeSelect.value;
+
+        machineTypeSelect.addEventListener('change', () => {
+            const type = machineTypeSelect.value;
+            populateMachineNames(machineNameSelect, type);
+        });
+
+        populateMachineNames(machineNameSelect, selectedType);
+        updateRowNumbers();
+    });
+
+    // Function to populate machine names based on the selected type
+    function populateMachineNames(machineNameSelect, type) {
+        machineNameSelect.innerHTML = `
+        <option value="" disabled>Select Machine</option>
+        ${machineOptions[type]?.map(machine =>
+            `<option value="${machine.id}" ${
+                machineNameSelect.getAttribute('data-selected') == machine.id ? 'selected' : ''
+            }>${machine.name}</option>`
+        ).join('') || ''}
+    `;
+        machineNameSelect.disabled = !type;
+    }
+
+    // Add new machine row
+    addMachineBtn.addEventListener('click', () => {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+        <input type="hidden" name="book_machine_id[]" value="new">
+        <input type="hidden" name="machine_row_status[]" value="new">
+        <td class="row-number">${machinesTable.rows.length + 1}</td>
+        <td>
+            <select class="machine-type" required>
+                <option value="" disabled selected>Select Type</option>
+                ${Object.keys(machineOptions).map(type => `<option value="${type}">${type}</option>`).join('')}
+            </select>
+        </td>
+        <td>
+            <select name="machine_id[]" class="machine-name" disabled>
+                <option value="" disabled selected>Select Machine</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="production_time[]" required>
+        </td>
+        <td>
+            <button type="button" class="delete-row-btn">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </td>
+    `;
+
+        machinesTable.appendChild(row);
+
+        const machineTypeSelect = row.querySelector('.machine-type');
+        const machineNameSelect = row.querySelector('.machine-name');
+
+        machineTypeSelect.addEventListener('change', () => {
+            const selectedType = machineTypeSelect.value;
+            populateMachineNames(machineNameSelect, selectedType);
+        });
+
+        row.querySelector('.delete-row-btn').addEventListener('click', () => {
+            machinesTable.removeChild(row);
+            updateRowNumbers();
+        });
+    });
+
+    // Function to update row numbers
+    function updateRowNumbers() {
+        [...machinesTable.rows].forEach((row, index) => {
+            row.querySelector('.row-number').textContent = index + 1;
+
+            const machine_statusField = row.querySelector('input[name="machine_row_status[]"]');
+
+            if (machine_statusField.value === 'unchanged') {
+                machine_statusField.value = 'edited';
+            }
+
+        });
+    }
+    // ???????????????????????????????? changed value
+    materialsTable.addEventListener('input', (event) => {
+        const row = event.target.closest('tr');
+        const material_statusField = row.querySelector('input[name="material_row_status[]"]');
+
+        if (material_statusField.value === 'unchanged') {
+            material_statusField.value = 'edited';
+        }
+
+    });
+    // Deleted row status
+    materialsTable.addEventListener('click', (event) => {
+        if (event.target.closest('.delete-row-btn')) {
+            const row = event.target.closest('tr');
+            const material_statusField = row.querySelector('input[name="material_row_status[]"]');
+
+            if (material_statusField.value === 'new') {
+                // Удалите строки, которые ещё не были добавлены в базу данных
+                materialsTable.removeChild(row);
+            } else {
+                // Пометьте строку как удалённую
+                material_statusField.value = 'deleted';
+                row.style.display = 'none'; // Скрыть строку
+            }
+
+        }
+    });
+
+    // ???????????????????????????????? changed value
+    machinesTable.addEventListener('input', (event) => {
+        const row = event.target.closest('tr');
+        const machine_statusField = row.querySelector('input[name="machine_row_status[]"]');
+
+
+        if (machine_statusField.value === 'unchanged') {
+            machine_statusField.value = 'edited';
+        }
+    });
+    // Deleted row status
+    machinesTable.addEventListener('click', (event) => {
+        if (event.target.closest('.delete-row-btn')) {
+            const row = event.target.closest('tr');
+            const machine_statusField = row.querySelector('input[name="machine_row_status[]"]');
+
+            if (machine_statusField.value === 'new') {
+                // Удалите строки, которые ещё не были добавлены в базу данных
+                machinesTable.removeChild(row);
+            } else {
+                // Пометьте строку как удалённую
+                machine_statusField.value = 'deleted';
+                row.style.display = 'none'; // Скрыть строку
+                machinesTable.appendChild(row);
+            }
+            updateRowNumbers();
+        }
+    });
+
+
+</script>
 </body>
 </html>

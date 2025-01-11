@@ -14,6 +14,23 @@
     padding: 0;
     box-sizing: border-box;
 }
+.sidebar.closed {
+    width: var(--sidebar-min-width);
+}
+/*???*/
+.sidebar.closed a{
+    width: 70%;
+}
+
+/* Minimized sidebar - hide text */
+.sidebar.closed a span {
+    display: none;
+}
+
+.sidebar.closed + .content {
+    margin-left: var(--sidebar-min-width);
+    margin-left: 5px;
+}
 
 body {
     font-family: system-ui, -apple-system, sans-serif;
@@ -22,7 +39,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(45deg, #ffffff, #3a5978);
+    background: #f8fafc;
 }
 
 header {
@@ -64,7 +81,15 @@ header {
     flex: 1;
     height: 100%;
 }
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px; /* Adjust sidebar width for smaller screens */
+    }
 
+    .main-container {
+        margin-left: 200px; /* Adjust main container margin for smaller screens */
+    }
+}
 /* Sidebar styles */
 .sidebar {
     width: var(--sidebar-width);
@@ -85,13 +110,27 @@ header {
     padding-bottom: 20px;
 }
 
-.sidebar.closed {
-    width: var(--sidebar-min-width);
-}
+/*.sidebar.closed {*/
+/*    width: var(--sidebar-min-width);*/
+/*}*/
+
+/*.sidebar.closed a{*/
+/*    width: 70%;*/
+/*}*/
+
+/*!* Minimized sidebar - hide text *!*/
+/*.sidebar.closed a span {*/
+/*    display: none;*/
+/*}*/
+
+/*.sidebar.closed + .content {*/
+/*    margin-left: var(--sidebar-min-width);*/
+/*    margin-left: 5px;*/
+/*}*/
 
 /* Hamburger button */
 .toggle-btn {
-    background: var(--primary-dark);
+    background: transparent;
     color: white;
     border: none;
     padding: 10px;
@@ -110,45 +149,64 @@ header {
     font-size: 24px; /* Hamburger icon size */
     margin-left: 0px; /* No margin for the hamburger icon */
 }
-
+/* Change color when pressed */
+.toggle-btn.pressed {
+    background: var(--primary-dark); /* Example: a lighter shade */
+    color: white; /* Optional: change text color */
+}
 /* Sidebar links */
 .sidebar a {
     text-decoration: none;
     color: white;
     font-size: 18px;
-    padding: 10px;
-    padding-left: 15px; /* Add 5px more to the left padding for the link */
+    padding: 10px 10px;
+    /*padding-left: 15px; !* Add 5px more to the left padding for the link *!*/
     border-radius: 4px;
     display: flex;
     align-items: center;
     gap: 10px;
     transition: background-color 0.2s ease-in-out;
     width: 90%;
+    margin-left: 10px;
     height: 50px; /* Ensure fixed height for all sidebar items */
 }
 
 /* Icons inside sidebar links */
 .sidebar a i {
     font-size: 20px;
-    margin-left: 5px; /* Add margin to move the icons 5px to the right */
+    /*margin-left: 5px; !* Add margin to move the icons 5px to the right *!*/
 }
 
 /* Hover effect for sidebar links */
 .sidebar a:hover {
     background-color: var(--hover-light);
-    margin-left: 5px;
+    padding: 10px 10px;
+    /*margin-left: 5px;*/
 }
 
 /* Active link styles */
 .sidebar a.active {
     background-color: var(--primary-dark);
-    margin-left: 5px;
+    /*margin-left: 5px;*/
 }
+/* Sidebar hover */
+/*.sidebar:hover {*/
+/*    width: var(--sidebar-width);*/
+/*}*/
 
-/* Minimized sidebar - hide text */
-.sidebar.closed a span {
-    display: none;
-}
+/*.sidebar:hover a{*/
+/*    width: 90%;*/
+/*}*/
+
+/*!* Minimized sidebar - hide text *!*/
+/*.sidebar:hover a span {*/
+/*    display: inline;*/
+/*}*/
+
+/*.sidebar:hover+ .content {*/
+/*    margin-left: var(--sidebar-width);*/
+/*    !*margin-left: 0px;*!*/
+/*}*/
 
 /* Content styles */
 .content {
@@ -163,10 +221,6 @@ header {
     height: calc(100vh - 70px); /* Full height minus the header height */
 }
 
-.sidebar.closed + .content {
-    margin-left: var(--sidebar-min-width);
-    margin-left: 5px;
-}
 
 /* Optimization results */
 .optimization-results {
@@ -309,6 +363,39 @@ tr:hover {
 .nav-buttons {
     display: flex;
     gap: 10px;
+}
+
+#logout_sidebar_button {
+    position: absolute;
+    display: inline-block;
+    bottom: 10%;
+    /*left: 10px;*/
+}
+
+/* Table sorting styles */
+th.sortable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+th.sortable:after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    border: 5px solid transparent;
+    border-top-color: #ccc;
+    transform: translateY(-50%);
+    top: 50%;
+}
+
+th.sortable.asc:after {
+    border-top-color: var(--primary-dark);
+    transform: translateY(-50%) rotate(180deg);
+}
+
+th.sortable.desc:after {
+    border-top-color: var(--primary-dark);
 }
 
 @media (max-width: 768px) {

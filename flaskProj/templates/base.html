@@ -7,6 +7,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>{% block title %}BobERP{% endblock %}</title>
 </head>
+<script>
+    // Sidebar state persistence across pages
+    document.addEventListener('DOMContentLoaded', () => {
+        const sidebar = document.querySelector('.sidebar');
+        // const toggleBtn = document.querySelector('.toggle-btn');
+
+        const isSidebarClosed = localStorage.getItem('sidebarClosed') === 'true'; // Compare as string
+
+        // Apply the saved state to the sidebar on page load
+        if (isSidebarClosed) {
+            sidebar.classList.add('closed');  // Minimize the sidebar
+        } else {
+            sidebar.classList.remove('closed');  // Maximize the sidebar
+        }
+
+    });
+</script>
 <body>
 <!-- Header -->
 <header>
@@ -28,6 +45,10 @@
         </button>
 
         <!-- Sidebar Links -->
+        <a href="{{ url_for('optimize_books') }}" class="sidebar-link" onclick="activateLink(event)">
+            <i class="fas fa-chart-line"></i>
+            <span>Optimization</span>
+        </a>
         <a href="{{ url_for('books') }}" class="sidebar-link" onclick="activateLink(event)">
             <i class="fas fa-book"></i>
             <span>Books</span>
@@ -42,18 +63,14 @@
         </a>
         <a href="{{ url_for('employees') }}" class="sidebar-link" onclick="activateLink(event)">
             <i class="fas fa-users"></i>
-            <span>Workers</span>
-        </a>
-        <a href="{{ url_for('optimize_books') }}" class="sidebar-link" onclick="activateLink(event)">
-            <i class="fas fa-chart-line"></i>
-            <span>Optimization</span>
+            <span>Employees</span>
         </a>
 
         <!-- Divider to push logout down -->
         <div style="flex-grow: 0.90;"></div>
 
         <!-- Logout Button -->
-        <a href="{{ url_for('logout') }}" class="sidebar-link logout-link" onclick="activateLink(event)">
+        <a id="logout_sidebar_button" href="{{ url_for('logout') }}" class="sidebar-link" onclick="activateLink(event)">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </a>
@@ -71,9 +88,9 @@
         const sidebar = document.querySelector('.sidebar'); // Select the sidebar element
         sidebar.classList.toggle('closed'); // Toggle the 'closed' class
 
-        // Save the current state of the sidebar to localStorage
         const isClosed = sidebar.classList.contains('closed');
         localStorage.setItem('sidebarClosed', isClosed);
+
     }
 
     // Function to activate the clicked link in the sidebar
@@ -82,22 +99,15 @@
         links.forEach(link => link.classList.remove('active'));
         event.target.closest('a').classList.add('active');
     }
-
-    // Sidebar state persistence across pages
-    document.addEventListener('DOMContentLoaded', () => {
-        const sidebar = document.querySelector('.sidebar');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Select the button
         const toggleBtn = document.querySelector('.toggle-btn');
 
-        // Check if the sidebar state is saved in localStorage
-        const isSidebarClosed = localStorage.getItem('sidebarClosed') === 'true';
-
-        // Apply the saved state to the sidebar on page load
-        if (isSidebarClosed) {
-            sidebar.classList.add('closed');  // Minimize the sidebar
-        } else {
-            sidebar.classList.remove('closed');  // Maximize the sidebar
-        }
-
+        // Add an event listener for click events
+        toggleBtn.addEventListener('click', function() {
+            // Toggle the 'active' class
+            this.classList.toggle('pressed');
+        });
     });
 </script>
 </body>

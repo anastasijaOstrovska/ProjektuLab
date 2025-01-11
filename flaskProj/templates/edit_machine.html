@@ -1,37 +1,78 @@
-{% extends "base.html" %}
-
-{% block title %}Edit Machine{% endblock %}
-
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Machines</title>
+    <link href="{{ url_for('static', filename='style_changes.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
 <div class="container">
-    <div class="header">
-        <h1>Edit Machine</h1>
-    </div>
+    <a href="{{ url_for('machines') }}">
+        <button type="button">
+            <i class="fas fa-arrow-left fa-1.5x"></i>
+        </button>
+    </a>
+    <h2>Edit Machine</h2>
 
-    <div class="content">
-        <div class="form-wrapper">
-            <form method="POST" class="standard-form">
-                <div class="form-group">
-                    <label for="name">Name:</label>
-                    <input type="text" id="name" name="name" value="{{ machine.name }}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="type">Type:</label>
-                    <input type="text" id="type" name="type" value="{{ machine.type }}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="capacity">Capacity:</label>
-                    <input type="number" id="capacity" name="capacity" value="{{ machine.capacity }}" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">Save Changes</button>
-                    <a href="{{ url_for('machines') }}" class="btn-secondary">Cancel</a>
-                </div>
-            </form>
-        </div>
-    </div>
+    <form method="POST" class="standard-form">
+        <label for="type">Type:</label>
+        <select id="type" name="type"  required>
+            <option value="{{ machine.type }}" selected>{{ machine.type }}</option>
+            <!-- Existing types -->
+        </select>
+        <input type="text" id="new_type" name="new_type" placeholder="Enter new type" style="display: none;" required>
+
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="{{ machine.name }}" required>
+
+        <label for="capacity">Capacity:</label>
+        <input type="number" inputmode="numeric" min="1" step="1" pattern="[0-9]*"
+               id="capacity" name="capacity" value="{{ machine.capacity }}" required>
+
+        <button type="submit" >Save Changes</button>
+
+    </form>
 </div>
-{% endblock %} 
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const machinesTypeSelect = document.getElementById('type');
+        const newMachinesTypeInput = document.getElementById('new_type');
+
+        // Add "New type" option dynamically as the first option
+        const newOption = document.createElement('option');
+        newOption.value = 'new';
+        newOption.textContent = 'New type';
+        machinesTypeSelect.insertBefore(newOption, machinesTypeSelect.firstChild); // Insert it at the start
+
+        // Existing machines type list from Flask
+        const existingTypes = {{ existing_types | tojson }}; // from Flask
+        existingTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            machinesTypeSelect.appendChild(option);
+        });
+
+        // Show/Hide new machines type field based on selection
+        machinesTypeSelect.addEventListener('change', () => {
+            if (machinesTypeSelect.value === 'new') {
+                newMachinesTypeInput.style.display = 'block';
+                newMachinesTypeInput.required = true;
+            } else {
+                newMachinesTypeInput.style.display = 'none';
+                newMachinesTypeInput.required = false;
+            }
+        });
+
+        // Initialize the state of the new type field based on the current type
+        if (machinesTypeSelect.value === 'new') {
+            newMachinesTypeInput.style.display = 'block';
+            newMachinesTypeInput.required = true;
+        } else {
+            newMachinesTypeInput.style.display = 'none';
+            newMachinesTypeInput.required = false;
+        }
+    });
+</script>
+</html>

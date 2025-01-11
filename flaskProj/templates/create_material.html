@@ -1,42 +1,77 @@
-{% extends "base.html" %}
-
-{% block title %}Create Material{% endblock %}
-
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Book</title>
+    <link href="{{ url_for('static', filename='style_changes.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
 <div class="container">
-    <div class="header">
-        <h1>Create New Material</h1>
-    </div>
+    <a href="{{ url_for('materials') }}">
+        <button type="button">
+            <i class="fas fa-arrow-left fa-1.5x"></i>
+        </button>
+    </a>
+    <h2>Create New Material</h2>
 
-    <div class="content">
-        <div class="form-wrapper">
-            <form method="POST" class="standard-form">
-                <div class="form-group">
-                    <label for="name">Name:</label>
-                    <input type="text" id="name" name="name" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="quantity">Quantity:</label>
-                    <input type="number" id="quantity" name="quantity" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="cost_per_piece">Cost per Piece ($):</label>
-                    <input type="number" step="0.01" id="cost_per_piece" name="cost_per_piece" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="type">Type:</label>
-                    <input type="text" id="type" name="type" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">Create Material</button>
-                    <a href="{{ url_for('materials') }}" class="btn-secondary">Cancel</a>
-                </div>
-            </form>
-        </div>
-    </div>
+    <form method="POST" onsubmit="return confirm('Are you sure you want to create this material?');">
+        <label for="type">Type:</label>
+        <select id="type" name="type" required>
+            <option value="" disabled selected>Select existing or new type</option>
+            <!-- Existing types -->
+        </select>
+        <input type="text" id="new_type" name="new_type" placeholder="Enter new type" style="display: none;" required>
+
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name" placeholder="Enter material name" required>
+
+        <label for="quantity">Quantity:</label>
+        <input type="number" inputmode="numeric" min="1" step="1" pattern="[0-9]*"
+               id="quantity" name="quantity" required>
+
+        <label for="cost_per_piece">Cost per Piece ($):</label>
+        <input type="number" step="0.01" id="cost_per_piece" name="cost_per_piece" required>
+
+        <button type="submit">Create Material</button>
+    </form>
 </div>
-{% endblock %} 
+<script>
+    // Show/Hide new material type field
+    const materialTypeSelect = document.getElementById('type');
+    const newMaterialTypeInput = document.getElementById('new_type');
+
+    materialTypeSelect.addEventListener('change', () => {
+        if (materialTypeSelect.value === 'new') {
+            newMaterialTypeInput.style.display = 'block';
+            newMaterialTypeInput.required = true;
+        } else {
+            newMaterialTypeInput.style.display = 'none';
+            newMaterialTypeInput.required = false;
+        }
+    });
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // New type
+        const newOption = document.createElement('option');
+        newOption.value = 'new';
+        newOption.textContent = 'New type';
+        materialTypeSelect.appendChild(newOption);
+
+        // Existing material type list
+        const existingTypes = {{ existing_types | tojson }}; // from Flask
+        existingTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            materialTypeSelect.appendChild(option);
+        });
+
+    });
+</script>
+
+
+</body>
+</html>

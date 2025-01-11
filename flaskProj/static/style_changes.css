@@ -1,0 +1,200 @@
+:root {
+    --primary: #2e5aa3;
+    --primary-dark: #1c3c73;
+    --background: green;
+    --text: #46515c;
+    --border: #e2e8f0;
+    --hover-light: #adc6e0;
+    --sidebar-width: 180px;
+    --sidebar-min-width: 60px;
+}
+
+/* General styles */
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(45deg, #ffffff, #769cc2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background: #ffffff;
+    max-width: 500px;
+    width: 100%;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+h2 {
+    text-align: center;
+    color: #333;
+}
+
+/* Form styles */
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-weight: bold;
+    color: var(--text);
+    margin-top: 10px;
+}
+
+input[type="text"],
+input[type="number"] {
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+textarea {
+    font-family: Arial, sans-serif;
+    padding: 8px;
+    font-size: 16px;
+    line-height: 1.5;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 5px;
+    width: 100%;
+    box-sizing: border-box; /* Ensure padding is included in the width */
+    overflow: hidden; /* Hide scrollbars */
+}
+
+
+/* Button styles */
+button[type="submit"],
+button[type="button"] {
+    background-color: var(--primary);
+    margin-top: 20px;
+    padding: 10px;
+    font-size: 16px;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button[type="submit"]:hover,
+button[type="button"]:hover {
+    background-color: var(--primary-dark);
+}
+
+button[type="submit"]:active {
+    background-color: var(--primary); /* Оставляем как в обычном состоянии */
+    /* outline: none; Убираем стандартную рамку фокуса */
+}
+
+/* Button Styling */
+button.table-btn {
+    float: right;
+    margin-top: -6px; /* Align with heading */
+    padding: 8px 16px;
+}
+
+button.table-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+button.delete-row-btn {
+    margin-top: 0px;
+    padding: 8px;
+    border-radius: 4px;
+    text-decoration: none;
+    /* display: inline-flex;
+    align-items: center; */
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border: none;
+    background-color: #a32e2e;
+    color: white;
+}
+
+button.delete-row-btn:hover {
+    background-color: #731c1c;
+}
+
+
+
+/* Table Container */
+.table-container {
+    width: 100%;
+    margin: auto;
+    overflow: hidden;
+}
+
+/* Table name and button container */
+.header-container {
+    width: 100%;
+    margin: 0 auto;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Table Heading */
+.table-container h2, .table-container h3 {
+    color: var(--text);
+    margin-bottom: 20px;
+    display: inline-block;
+}
+.table-container input[type="text"],
+.table-container input[type="number"] {
+    margin-top: 0;
+    /* width: 120px   change table input field width */
+}
+
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0px;
+}
+
+
+td {
+    padding: 6px 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    background-color: var(--primary);
+    color: white;
+}
+
+tr:hover {
+    background-color: #f5f5f5;
+}
+
+
+
+/* Dropdown (Select) Styling */
+select {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    appearance: none; /* Remove default arrow in some browsers */
+}
+
+select:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}

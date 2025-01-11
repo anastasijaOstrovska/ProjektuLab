@@ -9,11 +9,11 @@
         <table>
             <thead>
             <tr>
-                <th>Name</th>
-                <th>Surname</th>
-                <th>Personal Code</th>
-                <th>Phone Number</th>
-                <th>Email</th>
+                <th data-column="0" class="sortable">Name</th>
+                <th data-column="1" class="sortable">Surname</th>
+                <th data-column="2" class="sortable">Personal Code</th>
+                <th data-column="3" class="sortable">Phone Number</th>
+                <th data-column="4" class="sortable">Email</th>
                 <th>Actions</th>
             </tr>
             </thead>
@@ -27,10 +27,12 @@
                 <td>{{ employee.email if employee.email else '-' }}</td>
                 <td>
                     <div class="nav-buttons">
-                        <a href="#" class="btn edit-btn">
+                        <a href="{{ url_for('edit_employee', employee_id=employee.id) }}" class="btn edit-btn">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a href="#" class="btn delete-btn" onclick="return confirmDelete('{{ employee.name }} {{ employee.surname }}')">
+                        <a href="{{ url_for('delete_employee', employee_id=employee.id) }}"
+                           class="btn delete-btn"
+                           onclick="return confirmDelete('{{ employee.name }} {{ employee.surname }}')">
                             <i class="fas fa-trash-alt"></i>
                         </a>
                     </div>
@@ -46,6 +48,47 @@
     function confirmDelete(employeeName) {
         return confirm("Are you sure you want to delete " + employeeName + "?");
     }
+
+    // Table sorting
+    document.addEventListener('DOMContentLoaded', () => {
+        const table = document.getElementById('sortable-table');
+        const headers = table.querySelectorAll('th.sortable');
+        const tbody = table.querySelector('tbody');
+
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const columnIndex = parseInt(header.getAttribute('data-column'));
+                const isAscending = header.classList.contains('asc');
+                sortTable(tbody, columnIndex, !isAscending);
+
+                // Update header classes
+                headers.forEach(h => h.classList.remove('asc', 'desc'));
+                header.classList.toggle('asc', !isAscending);
+                header.classList.toggle('desc', isAscending);
+            });
+        });
+
+        function sortTable(tbody, columnIndex, ascending) {
+            const rows = Array.from(tbody.rows);
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim();
+                const bText = b.cells[columnIndex].textContent.trim();
+
+                // Numeric sorting for the quantity column
+                if (!isNaN(aText) && !isNaN(bText)) {
+                    return ascending ? aText - bText : bText - aText;
+                }
+                // String sorting for other columns
+                return ascending
+                    ? aText.localeCompare(bText)
+                    : bText.localeCompare(aText);
+            });
+
+            // Append sorted rows back to the tbody
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+    });
 </script>
 
 {% endblock %} 

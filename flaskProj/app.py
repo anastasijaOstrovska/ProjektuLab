@@ -61,6 +61,13 @@ def main():
 def register():
     if request.method == 'POST':
         username = request.form['username']
+        name = request.form['name']
+        surname = request.form['surname']
+        personal_code = request.form['personal_code']
+        phone_number = request.form['phone_number']
+        email = request.form['email']
+        role = 2
+        product_id = 1
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
@@ -72,7 +79,9 @@ def register():
         hashed_password = generate_password_hash(password)
         cursor = mysql.connection.cursor()
         try:
-            cursor.execute("INSERT INTO users (username, password, production_id) VALUES (%s, %s, %s)", (username, hashed_password, 1))
+            cursor.execute("INSERT INTO users (username, password, role_id, production_id) VALUES (%s, %s, %s, %s)", (username, hashed_password, role, product_id))
+            user_id = cursor.lastrowid
+            cursor.execute("INSERT INTO employees (name, surname, personal_code, phone_number, email, user_id) VALUES (%s, %s, %s, %s, %s, %s)", (name, surname, personal_code, phone_number, email, user_id))
             mysql.connection.commit()
             session['username'] = username  # Добавляем пользователя в сессию
             session.permanent = True
@@ -289,48 +298,234 @@ def books():
 
     return render_template('books.html', books=books)
 
-@app.route('/edit_book/<book_id>', methods=['GET', 'POST'])
+# @app.route('/edit_book/<book_id>', methods=['GET', 'POST'])
+# @login_required
+# def edit_book(book_id):
+#     cursor = mysql.connection.cursor()
+#
+#     # if POST, update
+#     if request.method == 'POST':
+#         name = request.form['name']
+#         description = request.form['description']
+#         selling_price = request.form['selling_price']
+#
+#
+#         cursor.execute("""
+#             UPDATE books
+#             SET  name = %s, description = %s, selling_price = %s
+#             WHERE book_id = %s;
+#         """, (name, description,selling_price, book_id))
+#
+#         mysql.connection.commit()
+#         cursor.close()
+#         return redirect(url_for('books'))
+#
+#     # if GET show existing data
+#     cursor.execute("""SELECT
+#                       b.book_id, b.name, b.description, b.selling_price
+#                       FROM books b
+#                       where b.book_id = %s""", (book_id,))
+#     books_list1 = cursor.fetchall()
+#     print(books_list1, book_id)
+#          # You can now pass these data to your template or further processing
+#     books1 = []
+#     for book in books_list1:
+#
+#         books1.append({
+#             'id': book[0],
+#             'name': book[1],
+#             'description': book[2],
+#             'selling_price': book[3]
+#         })
+#    # cursor.close()
+#     print(books1, book_id)
+#     return render_template('edit_book.html', book=books1[0])
+
+@app.route('/edit_book/<int:book_id>', methods=['GET'])
 @login_required
 def edit_book(book_id):
     cursor = mysql.connection.cursor()
-
-    # if POST, update
-    if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        selling_price = request.form['selling_price']
-
-
-        cursor.execute("""
-            UPDATE books
-            SET  name = %s, description = %s, selling_price = %s
-            WHERE book_id = %s;
-        """, (name, description,selling_price, book_id))
-
-        mysql.connection.commit()
-        cursor.close()
-        return redirect(url_for('books'))
-
-    # if GET show existing data
     cursor.execute("""SELECT
                       b.book_id, b.name, b.description, b.selling_price
                       FROM books b
                       where b.book_id = %s""", (book_id,))
-    books_list1 = cursor.fetchall()
-    print(books_list1, book_id)
-         # You can now pass these data to your template or further processing
-    books1 = []
-    for book in books_list1:
 
-        books1.append({
-            'id': book[0],
-            'name': book[1],
-            'description': book[2],
-            'selling_price': book[3]
+    if cursor.rowcount == 0:
+        return redirect(url_for('books'))
+
+    books_list1 = cursor.fetchall()
+    book = {
+            'id': books_list1[0][0],
+            'name': books_list1[0][1],
+            'description': books_list1[0][2],
+            'selling_price': books_list1[0][3],
+            'materials': [],
+            'machines': []
+        }
+    # Book materials
+    cursor.execute("""SELECT
+                      bm.book_material_id, bm.material_id, m.name, m.type, bm.material_quantity
+                      FROM book_materials bm
+                      JOIN materials m ON bm.material_id = m.material_id
+                      where bm.book_id = %s""", (book_id,))
+    material_list = cursor.fetchall()
+
+    for material in material_list:
+        book['materials'].append({
+            'book_material_id': material[0],
+            'id': material[1],
+            'name': material[2],
+            'type': material[3],
+            'quantity': material[4]
         })
-   # cursor.close()
-    print(books1, book_id)
-    return render_template('edit_book.html', book=books1[0])
+
+    cursor.execute("""SELECT
+                      bh.book_hardware_id, bh.hardware_id, m.name, m.type,
+                      bh.production_time_in_minutes, bh.order_in_queue
+                      FROM book_hardwares bh
+                      JOIN hardwares m ON bh.hardware_id = m.hardware_id
+                      WHERE bh.book_id = %s
+                      ORDER BY bh.order_in_queue""", (book_id,))
+    machine_list = cursor.fetchall()
+
+    for machine in machine_list:
+        book['machines'].append({
+            'book_hardware_id': machine[0],
+            'id': machine[1],
+            'name': machine[2],
+            'type': machine[3],
+            'production_time': machine[4],
+            'order': machine[5],
+        })
+
+#     print(book)
+
+    # Fetch available materials from the database
+    cursor.execute("SELECT material_id, name, type FROM materials")
+    materials = cursor.fetchall()
+
+    # Group materials by type
+    materials_options = {}
+    for material in materials:
+        material_type = material[2]
+        if material_type not in materials_options:
+            materials_options[material_type] = []
+        materials_options[material_type].append({
+            'id': material[0],
+            'name': material[1]
+        })
+
+
+    # Fetch available machines from the database
+    cursor.execute("SELECT hardware_id, name, type FROM hardwares")
+    machines = cursor.fetchall()
+    cursor.close()
+
+    # Group machines by type
+    machines_options = {}
+    for machine in machines:
+        machine_type = machine[2]
+        if machine_type not in machines_options:
+            machines_options[machine_type] = []
+        machines_options[machine_type].append({
+            'id': machine[0],
+            'name': machine[1]
+        })
+
+#     materials_options = {
+#     "Paper": [{"id": 1, "name": "A4 Paper"}, {"id": 2, "name": "A3 Paper"}],
+#     "Ink": [{"id": 3, "name": "Black Ink"}, {"id": 4, "name": "Blue Ink"}]
+#     }
+
+
+    # materials_options = get_materials_options()  # Получение материалов из базы
+    # machines_options = get_machines_options()  # Получение машин из базы
+    cursor.close()
+    return render_template('edit_book.html', book=book, materials_options=materials_options, machines_options=machines_options)
+
+
+
+@app.route('/edit_book/<int:book_id>', methods=['POST'])
+@login_required
+def save_book(book_id):
+#     return redirect(url_for('books'))
+    cursor = mysql.connection.cursor()
+
+    book_name = request.form['name']
+    book_description = request.form['description']
+    book_selling_price = request.form['selling_price']
+    print(book_name,book_selling_price)
+    cursor.execute("""
+        UPDATE books
+        SET  name = %s, description = %s, selling_price = %s
+        WHERE book_id = %s;
+    """, (book_name, book_description,book_selling_price, book_id))
+
+
+    # Получить данные из формы
+    material_row_statuses = request.form.getlist('material_row_status[]')
+    book_material_ids = request.form.getlist('book_material_id[]')
+    material_ids = request.form.getlist('material_id[]')
+    quantities = request.form.getlist('quantity[]')
+
+    machine_row_statuses = request.form.getlist('machine_row_status[]')
+    book_machine_ids = request.form.getlist('book_machine_id[]')
+    machine_ids = request.form.getlist('machine_id[]')
+    production_times = request.form.getlist('production_time[]')
+
+    # Material tables
+    for material_row_status,book_material_id, material_id,quantity in zip(material_row_statuses, book_material_ids, material_ids,quantities):
+        if material_row_status == 'new':
+            # Добавить новую строку
+            cursor.execute("""
+                INSERT INTO book_materials (book_id, material_id, material_quantity)
+                VALUES (%s, %s, %s)
+            """, (book_id, material_id, quantity))
+        elif material_row_status == 'edited':
+            # Обновить существующую строку
+            cursor.execute("""
+                        UPDATE book_materials
+                        SET material_id = %s, material_quantity = %s
+                        WHERE book_material_id = %s
+                    """, (material_id, quantity, book_material_id))
+        elif material_row_status == 'deleted':
+            # Удалить строку
+            cursor.execute("DELETE FROM book_materials WHERE book_material_id = %s", (book_material_id,))
+
+
+    # Machine tables
+    order=0
+    for machine_row_status, book_machine_id, machine_id, production_time in zip(machine_row_statuses, book_machine_ids, machine_ids, production_times):
+        order+=1
+        if machine_row_status == 'new':
+            # Добавить новую строку
+            cursor.execute("""
+                INSERT INTO book_hardwares (book_id, hardware_id, production_time_in_minutes, order_in_queue)
+                VALUES (%s, %s, %s, %s)
+            """, (book_id, machine_id, production_time, order))
+        elif machine_row_status == 'edited':
+            # Обновить существующую строку
+            cursor.execute("""
+                        UPDATE book_hardwares
+                        SET hardware_id = %s, production_time_in_minutes = %s, order_in_queue = %s
+                        WHERE book_hardware_id = %s
+                    """, (machine_id, production_time, order, book_machine_id))
+        elif machine_row_status == 'deleted':
+            order-=1
+            # Удалить строку
+            cursor.execute("DELETE FROM book_hardwares WHERE book_hardware_id = %s", (book_machine_id,))
+
+
+
+    mysql.connection.commit()
+    return redirect(url_for('books'))
+
+
+
+
+
+
+
 
 @app.route('/delete_book/<book_id>', methods=['GET'])
 @login_required
@@ -376,6 +571,18 @@ def create_book():
                 VALUES (%s, %s, %s)
             """, (book_id, material_id, quantity))
 
+        # Insert machines associated with the book
+        machine_ids = request.form.getlist('machine_id[]')
+        machine_pr_times = request.form.getlist('production_time[]')
+
+        order=0
+        for machine_id, machine_pr_time in zip(machine_ids, machine_pr_times):
+            order+=1
+            cursor.execute("""
+                INSERT INTO book_hardwares (book_id, hardware_id, production_time_in_minutes, order_in_queue)
+                VALUES (%s, %s, %s, %s)
+            """, (book_id, machine_id, machine_pr_time, order))
+
         mysql.connection.commit()
         cursor.close()
 
@@ -384,7 +591,6 @@ def create_book():
     # Fetch available materials from the database
     cursor.execute("SELECT material_id, name, type FROM materials")
     materials = cursor.fetchall()
-    cursor.close()
 
     # Group materials by type
     grouped_materials = {}
@@ -396,12 +602,28 @@ def create_book():
             'id': material[0],
             'name': material[1]
         })
+
+    # Fetch available machines from the database
+    cursor.execute("SELECT hardware_id, name, type FROM hardwares")
+    machines = cursor.fetchall()
+    cursor.close()
+
+    # Group machines by type
+    grouped_machines = {}
+    for machine in machines:
+        machine_type = machine[2]
+        if machine_type not in grouped_machines:
+            grouped_machines[machine_type] = []
+        grouped_machines[machine_type].append({
+            'id': machine[0],
+            'name': machine[1]
+        })
 #     grouped_materials = {
 #     "Paper": [{"id": 1, "name": "A4 Paper"}, {"id": 2, "name": "A3 Paper"}],
 #     "Ink": [{"id": 3, "name": "Black Ink"}, {"id": 4, "name": "Blue Ink"}]
 #     }
 
-    return render_template('create_book.html', materials=grouped_materials)
+    return render_template('create_book.html', materials=grouped_materials, machines=grouped_machines)
 
 
 
@@ -477,6 +699,82 @@ def employees():
     cursor.close()
     return render_template('employees.html', employees=employees)
 
+@app.route('/delete_employee/<int:employee_id>')
+@login_required
+def delete_employee(employee_id):
+    cursor = mysql.connection.cursor()
+
+    # Fetch the user_id of the employee
+
+    cursor.execute("SELECT user_id FROM employees WHERE employee_id = %s", (employee_id,))
+    result = cursor.fetchone()  # Fetch the record
+
+    if result:
+        user_id = result[0]  # Extract user_id from the result
+
+        # Delete the employee record
+        cursor.execute("DELETE FROM employees WHERE employee_id = %s", (employee_id,))
+
+        # Delete the user record
+        cursor.execute("DELETE FROM users WHERE user_id = %s", (user_id,))
+        print(f"Deleted user with ID: {user_id}")
+    else:
+        print("No user found for the given employee_id")
+    mysql.connection.commit()
+
+    cursor.close()
+
+    # Redirect to the book list page after deletion
+    return redirect(url_for('employees'))
+
+@app.route('/edit_employee/<int:employee_id>', methods=['GET', 'POST'])
+@login_required
+def edit_employee(employee_id):
+    if request.method == 'GET':
+        print("get used")
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT employee_id, name, surname, personal_code, phone_number, email FROM employees WHERE employee_id = %s", (employee_id,))
+
+        if cursor.rowcount == 0:
+                        return redirect(url_for('books'))
+
+        employees = cursor.fetchall()
+
+        employee = {
+                'id': employees[0][0],
+                'name': employees[0][1],
+                'surname': employees[0][2],
+                'personal_code': employees[0][3],
+                'phone': employees[0][4],
+                'email': employees[0][5]
+            }
+        cursor.close()
+
+        if employee:
+            return render_template('edit_employee.html', employee=employee)
+        else:
+            return "Employee not found", 404
+
+    if request.method == 'POST':
+        cursor = mysql.connection.cursor()
+        name = request.form['name']
+        surname = request.form['surname']
+        personal_code = request.form['personal_code']
+        phone = request.form['phone']
+        email = request.form['email']
+
+        cursor.execute("""
+                    UPDATE employees
+                    SET name = %s, surname = %s, personal_code = %s, phone_number = %s, email = %s
+                    WHERE employee_id = %s
+                """, (name, surname, personal_code, phone, email,employee_id ))
+
+        mysql.connection.commit()
+
+        cursor.close()
+        return redirect(url_for('employees'))
+    return redirect(url_for('employees'))
+
 @app.route('/machines')
 @login_required
 def machines():
@@ -509,23 +807,50 @@ def machines():
 @app.route('/create_material', methods=['GET', 'POST'])
 @login_required
 def create_material():
+    cursor = mysql.connection.cursor()
     if request.method == 'POST':
-        name = request.form['name']
-        quantity = request.form['quantity']
+        type = request.form.get('type')
+        new_type = request.form.get('new_type')
+        name = request.form.get('name')
+        quantity = request.form.get('quantity')
         cost_per_piece = request.form['cost_per_piece']
-        material_type = request.form['type']
 
-        cursor = mysql.connection.cursor()
+#         print(type, new_type)
+        # If new type selected
+        if type == 'new':
+            type = new_type
+
         cursor.execute("""
             INSERT INTO materials (name, quantity, cost_per_piece, type)
             VALUES (%s, %s, %s, %s)
-        """, (name, quantity, cost_per_piece, material_type))
-        
+        """, (name, quantity, cost_per_piece, type))
+
+
         mysql.connection.commit()
         cursor.close()
         return redirect(url_for('materials'))
 
-    return render_template('create_material.html')
+    # Get existing types
+    cursor.execute("""
+            SELECT DISTINCT type
+            FROM materials
+            ORDER BY type
+        """)
+
+    materials_list = cursor.fetchall()
+    existing_types = []
+
+    for material in materials_list:
+        existing_types.append(material[0])
+
+    cursor.close()
+    return render_template('create_material.html', existing_types=existing_types)
+
+
+
+
+
+
 
 @app.route('/edit_material/<int:material_id>', methods=['GET', 'POST'])
 @login_required
@@ -534,9 +859,14 @@ def edit_material(material_id):
 
     if request.method == 'POST':
         name = request.form['name']
+        material_type = request.form['type']
+        new_type = request.form['new_type']
         quantity = request.form['quantity']
         cost_per_piece = request.form['cost_per_piece']
-        material_type = request.form['type']
+
+        # If new type selected
+        if material_type == 'new':
+            material_type = new_type
 
         cursor.execute("""
             UPDATE materials
@@ -547,6 +877,18 @@ def edit_material(material_id):
         mysql.connection.commit()
         cursor.close()
         return redirect(url_for('materials'))
+ # Get existing types
+    cursor.execute("""
+            SELECT DISTINCT type
+            FROM materials
+            ORDER BY type
+        """)
+
+    materials_list = cursor.fetchall()
+    existing_types = []
+
+    for material in materials_list:
+        existing_types.append(material[0])
 
     # Получаем данные материала для редактирования
     cursor.execute("""
@@ -566,7 +908,7 @@ def edit_material(material_id):
             'cost': material[3],
             'type': material[4]
         }
-        return render_template('edit_material.html', material=material_data)
+        return render_template('edit_material.html', material=material_data, existing_types=existing_types)
     
     return redirect(url_for('materials'))
 
@@ -574,42 +916,73 @@ def edit_material(material_id):
 @login_required
 def delete_material(material_id):
     cursor = mysql.connection.cursor()
-    
-    # Проверяем, используется ли материал в книгах
+
+    # Check if the material is used in books
     cursor.execute("""
-        SELECT COUNT(*) FROM book_materials 
-        WHERE material_id = %s
+        SELECT b.name FROM book_materials bm
+        JOIN books b ON bm.book_id = b.book_id
+        WHERE bm.material_id = %s
     """, (material_id,))
-    
-    if cursor.fetchone()[0] > 0:
+
+    used_in_books = cursor.fetchall()
+
+    if used_in_books:
         cursor.close()
-        return "Cannot delete material as it is used in books", 400
-    
+        # Generate a list of book titles where the material is used
+        books_list = [book[0] for book in used_in_books]
+        books_message = ', '.join(books_list).replace("'", "\\'")  # Escape single quotes for JavaScript
+        return f"Cannot delete material as it is used in the following books: {books_message}."
+
+    # Delete the material if not used
     cursor.execute("DELETE FROM materials WHERE material_id = %s", (material_id,))
     mysql.connection.commit()
     cursor.close()
-    
-    return redirect(url_for('materials'))
+
+    return f"Material was successfully deleted"
+
 
 @app.route('/create_machine', methods=['GET', 'POST'])
 @login_required
 def create_machine():
+    cursor = mysql.connection.cursor()
     if request.method == 'POST':
-        name = request.form['name']
-        machine_type = request.form['type']
-        capacity = request.form['capacity']
+        type = request.form.get('type')
+        new_type = request.form.get('new_type')
+        name = request.form.get('name')
+        capacity = request.form.get('capacity')
+        print(type, new_type)
+        # If new type selected
+        if type == 'new':
+            type = new_type
 
-        cursor = mysql.connection.cursor()
         cursor.execute("""
             INSERT INTO hardwares (name, type, capacity)
             VALUES (%s, %s, %s)
-        """, (name, machine_type, capacity))
-        
+        """, (name, type, capacity))
+
         mysql.connection.commit()
         cursor.close()
         return redirect(url_for('machines'))
 
-    return render_template('create_machine.html')
+    # Get existing types
+    cursor.execute("""
+            SELECT DISTINCT type
+            FROM hardwares
+            ORDER BY type
+        """)
+
+    machines_list = cursor.fetchall()
+    existing_types = []
+
+    for machine in machines_list:
+        existing_types.append(machine[0])
+
+    cursor.close()
+    return render_template('create_machine.html', existing_types=existing_types)
+
+
+
+
 
 @app.route('/edit_machine/<int:machine_id>', methods=['GET', 'POST'])
 @login_required
@@ -619,7 +992,12 @@ def edit_machine(machine_id):
     if request.method == 'POST':
         name = request.form['name']
         machine_type = request.form['type']
+        new_type = request.form['new_type']
         capacity = request.form['capacity']
+
+        # If new type selected
+        if machine_type == 'new':
+            machine_type = new_type
 
         cursor.execute("""
             UPDATE hardwares
@@ -629,7 +1007,20 @@ def edit_machine(machine_id):
 
         mysql.connection.commit()
         cursor.close()
+
         return redirect(url_for('machines'))
+    # Get existing types
+    cursor.execute("""
+            SELECT DISTINCT type
+            FROM hardwares
+            ORDER BY type
+        """)
+
+    machines_list = cursor.fetchall()
+    existing_types = []
+
+    for machine in machines_list:
+        existing_types.append(machine[0])
 
     cursor.execute("""
         SELECT hardware_id, name, type, capacity
@@ -647,7 +1038,7 @@ def edit_machine(machine_id):
             'type': machine[2],
             'capacity': machine[3]
         }
-        return render_template('edit_machine.html', machine=machine_data)
+        return render_template('edit_machine.html', machine=machine_data, existing_types=existing_types)
     
     return redirect(url_for('machines'))
 
@@ -655,11 +1046,28 @@ def edit_machine(machine_id):
 @login_required
 def delete_machine(machine_id):
     cursor = mysql.connection.cursor()
+
+# Check if the machine is used in books
+    cursor.execute("""
+    SELECT b.name FROM book_hardwares bm
+    JOIN books b ON bm.book_id = b.book_id
+    WHERE bm.hardware_id = %s
+    """, (machine_id,))
+
+    used_in_books = cursor.fetchall()
+
+    if used_in_books:
+        cursor.close()
+        # Generate a list of book titles where the machine is used
+        books_list = [book[0] for book in used_in_books]
+        books_message = ', '.join(books_list).replace("'", "\\'")  # Escape single quotes for JavaScript
+        return f"Cannot delete machine as it is used in the following books: {books_message}."
+
     cursor.execute("DELETE FROM hardwares WHERE hardware_id = %s", (machine_id,))
     mysql.connection.commit()
     cursor.close()
     
-    return redirect(url_for('machines'))
+    return f"Machine was successfully deleted"
 
 if __name__ == '__main__':
     # Очищаем сессии при запуске

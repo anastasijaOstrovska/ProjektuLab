@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Book</title>
-    <link href="{{ url_for('static', filename='style_create.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style_changes.css') }}" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-<div class="container">
+<div class="container" style="max-width: 800px;">
     <a href="{{ url_for('books') }}">
         <button type="button">
             <i class="fas fa-arrow-left fa-1.5x"></i>
@@ -24,13 +24,12 @@
 
         <label for="selling_price">Selling Price:</label>
         <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" name="selling_price" id="selling_price" required>
-        
-        <div class="header-container">
-            <h3>Materials</h3>
-            <button id="add-material-btn">Add Material</button>
-        </div>
-        
+
         <div class="table-container">
+            <div class="header-container">
+                <h3>Materials</h3>
+                <button type="button" class="table-btn" id="add-material-btn">Add Material</button>
+            </div>
             <table id="materials-table">
                 <thead>
                 <tr>
@@ -45,11 +44,32 @@
             </table>
         </div>
 
+        <div class="table-container">
+            <div class="header-container">
+                <h3>Machines</h3>
+                <button type="button" class="table-btn" id="add-machine-btn">Add Machine</button>
+            </div>
+            <table id="machines-table">
+                <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Machine Type</th>
+                    <th>Machine Name</th>
+                    <th>Production Time (minutes)</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
         <button type="submit">Create Book</button>
     </form>
 </div>
 
 <script>
+    // Material table
     const materialOptions = {{ materials | tojson }};
     const materialsTable = document.getElementById('materials-table').querySelector('tbody');
     const addMaterialBtn = document.getElementById('add-material-btn');
@@ -70,10 +90,10 @@
                 </select>
             </td>
             <td>
-                <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" name="quantity[]" required>
+                <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="quantity[]" required>
             </td>
             <td>
-                <button type="delete" class="delete-row-btn">
+                <button type="button" class="delete-row-btn">
                     <i class="fas fa-trash-alt"></i>
                 </button>
             </td>
@@ -88,15 +108,75 @@
             const selectedType = materialTypeSelect.value;
             materialNameSelect.innerHTML = `
                 <option value="" disabled selected>Select Material</option>
-                ${materialOptions[selectedType].map(material => 
-                    `<option value="${material.id}">${material.name}</option>`
-                ).join('')}
+                ${materialOptions[selectedType].map(material =>
+                `<option value="${material.id}">${material.name}</option>`
+            ).join('')}
             `;
             materialNameSelect.disabled = false;
         });
 
         row.querySelector('.delete-row-btn').addEventListener('click', () => {
             materialsTable.removeChild(row);
+        });
+    });
+
+    // Machine table
+    const machineOptions = {{ machines | tojson }};
+    const machinesTable = document.getElementById('machines-table').querySelector('tbody');
+    const addMachineBtn = document.getElementById('add-machine-btn');
+
+    // Function to update row numbers
+    const updateRowNumbers = () => {
+        [...machinesTable.rows].forEach((row, index) => {
+            row.querySelector('.row-number').textContent = index + 1;
+        });
+    };
+
+    addMachineBtn.addEventListener('click', () => {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+            <td class="row-number">${machinesTable.rows.length + 1}</td>
+            <td>
+                <select class="machine-type" required>
+                    <option value="" disabled selected>Select Type</option>
+                    ${Object.keys(machineOptions).map(type => `<option value="${type}">${type}</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <select name="machine_id[]" class="machine-name" required disabled>
+                    <option value="" disabled selected>Select Machine</option>
+                </select>
+            </td>
+            <td>
+                <input type="number" inputmode="numeric" min="1" pattern="[0-9]*" name="production_time[]" required>
+            </td>
+            <td>
+                <button type="button" class="delete-row-btn">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+
+        machinesTable.appendChild(row);
+
+        const machineTypeSelect = row.querySelector('.machine-type');
+        const machineNameSelect = row.querySelector('.machine-name');
+
+        machineTypeSelect.addEventListener('change', () => {
+            const selectedType = machineTypeSelect.value;
+            machineNameSelect.innerHTML = `
+                <option value="" disabled selected>Select Machine</option>
+                ${machineOptions[selectedType].map(machine =>
+                `<option value="${machine.id}">${machine.name}</option>`
+            ).join('')}
+            `;
+            machineNameSelect.disabled = false;
+        });
+
+        row.querySelector('.delete-row-btn').addEventListener('click', () => {
+            machinesTable.removeChild(row);
+            updateRowNumbers(); // Recalculate row numbers after deletion
         });
     });
 </script>

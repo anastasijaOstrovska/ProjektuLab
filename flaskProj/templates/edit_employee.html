@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Machines</title>
+    <link href="{{ url_for('static', filename='style_changes.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<div class="container">
+    <a href="{{ url_for('employees') }}">
+        <button type="button">
+            <i class="fas fa-arrow-left fa-1.5x"></i>
+        </button>
+    </a>
+    <h2>Edit Employee</h2>
+
+    <form method="POST" class="standard-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="{{ employee.name }}" required>
+
+        <label for="surname">Surname:</label>
+        <input type="text" id="surname" name="surname" value="{{ employee.surname }}" required>
+
+        <label for="personal_code">Personal Code:</label>
+        <input type="text" id="personal_code" name="personal_code"
+               pattern="^\d{6}-\d{5}$" title="Format: XXXXXX-XXXXX" value="{{ employee.personal_code }}" required>
+
+        <label for="phone">Phone:</label>
+        <input type="text" id="phone" name="phone"
+               pattern="^\+\d{11}$" title="Format: + followed by 11 digits (e.g., +12345678901)"
+               value="{{ employee.phone }}" required>
+
+        <label for="email">Email:</label>
+        <input type="text" id="email" name="email"
+               pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+               title="Enter a valid email address"
+               value="{{ employee.email }}" required>
+
+        <button type="submit" >Save Changes</button>
+
+    </form>
+</div>
+
+</html>
