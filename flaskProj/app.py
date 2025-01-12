@@ -19,13 +19,13 @@ from math import ceil
 app = Flask(__name__)
 load_dotenv('/var/www/ProjektuLab/flaskProj/pswd.env')
 
-# Настройки сессии
+# Session settings
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'flask_session')  # Папка для хранения сессий
 app.secret_key = os.getenv('APP_SECRET_KEY')
 
-# Инициализация Flask-Session
+# Initialization of Flask-Session
 Session(app)
 
 # Database connection
@@ -65,16 +65,16 @@ def get_role():
         cursor.close()
 
         if role_id:
-            role = get_user_role(role_id[0])  # Получаем роль по role_id
+            role = get_user_role(role_id[0])  # Get role by role_id
         else:
-            role = 'unknown'  # На случай, если роль не найдена
+            role = 'unknown'  # In case the role is not found
     return(role)
 
 def role_required(allowed_roles):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # Получаем role_id из сессии
+            # Get role_id from the session
             role = session.get('role')
             role_id = get_role_id(role)  
             if role_id not in allowed_roles:
@@ -120,10 +120,10 @@ def register():
             user_id = cursor.lastrowid
             cursor.execute("INSERT INTO employees (name, surname, personal_code, phone_number, email, user_id) VALUES (%s, %s, %s, %s, %s, %s)", (name, surname, personal_code, phone_number, email, user_id))
             mysql.connection.commit()
-            session['username'] = username  # Добавляем пользователя в сессию
+            session['username'] = username  # Add user to the session
             session['role'] = get_role()
             session.permanent = True
-            return redirect(url_for('display_plans'))  # Перенаправляем на main
+            return redirect(url_for('display_plans'))  # Redirect to main
         except Exception as e:
             return f"Error occurred: {str(e)}"
         finally:
@@ -145,7 +145,7 @@ def login():
             session['username'] = username
             session['role'] = get_role()
             session.permanent = True
-            return redirect(url_for('main'))  # Изменено с optimize_books на main
+            return redirect(url_for('main'))  # Changed from to main
         return 'Invalid username or password.'
     return render_template('login.html')
 
@@ -255,8 +255,6 @@ def edit_book(book_id):
             'order': machine[5],
         })
 
-#     print(book)
-
     # Fetch available materials from the database
     cursor.execute("SELECT material_id, name, type FROM materials")
     materials = cursor.fetchall()
@@ -289,14 +287,7 @@ def edit_book(book_id):
             'name': machine[1]
         })
 
-#     materials_options = {
-#     "Paper": [{"id": 1, "name": "A4 Paper"}, {"id": 2, "name": "A3 Paper"}],
-#     "Ink": [{"id": 3, "name": "Black Ink"}, {"id": 4, "name": "Blue Ink"}]
-#     }
 
-
-    # materials_options = get_materials_options()  # Получение материалов из базы
-    # machines_options = get_machines_options()  # Получение машин из базы
     cursor.close()
     return render_template('edit_book.html', book=book, materials_options=materials_options, machines_options=machines_options)
 
@@ -333,20 +324,20 @@ def save_book(book_id):
     # Material tables
     for material_row_status,book_material_id, material_id,quantity in zip(material_row_statuses, book_material_ids, material_ids,quantities):
         if material_row_status == 'new':
-            # Добавить новую строку
+            # Add a new line
             cursor.execute("""
                 INSERT INTO book_materials (book_id, material_id, material_quantity)
                 VALUES (%s, %s, %s)
             """, (book_id, material_id, quantity))
         elif material_row_status == 'edited':
-            # Обновить существующую строку
+            # Update an existing line
             cursor.execute("""
                         UPDATE book_materials
                         SET material_id = %s, material_quantity = %s
                         WHERE book_material_id = %s
                     """, (material_id, quantity, book_material_id))
         elif material_row_status == 'deleted':
-            # Удалить строку
+            # Delete a line
             cursor.execute("DELETE FROM book_materials WHERE book_material_id = %s", (book_material_id,))
 
 
@@ -355,13 +346,13 @@ def save_book(book_id):
     for machine_row_status, book_machine_id, machine_id, production_time in zip(machine_row_statuses, book_machine_ids, machine_ids, production_times):
         order+=1
         if machine_row_status == 'new':
-            # Добавить новую строку
+
             cursor.execute("""
                 INSERT INTO book_hardwares (book_id, hardware_id, production_time_in_minutes, order_in_queue)
                 VALUES (%s, %s, %s, %s)
             """, (book_id, machine_id, production_time, order))
         elif machine_row_status == 'edited':
-            # Обновить существующую строку
+
             cursor.execute("""
                         UPDATE book_hardwares
                         SET hardware_id = %s, production_time_in_minutes = %s, order_in_queue = %s
@@ -369,7 +360,7 @@ def save_book(book_id):
                     """, (machine_id, production_time, order, book_machine_id))
         elif machine_row_status == 'deleted':
             order-=1
-            # Удалить строку
+
             cursor.execute("DELETE FROM book_hardwares WHERE book_hardware_id = %s", (book_machine_id,))
 
 
@@ -497,15 +488,15 @@ def create_book():
 
 @app.before_request
 def session_handler():
-    session.permanent = True  # Делаем сессию постоянной
-    app.permanent_session_lifetime = timedelta(minutes=10)  # Устанавливаем время жизни
+    session.permanent = True 
+    app.permanent_session_lifetime = timedelta(minutes=10)  # Set the session lifetime
 
 @app.route('/materials')
 @login_required
 def materials():
     cursor = mysql.connection.cursor()
     
-    # Получаем список всех материалов с правильными полями из базы
+    # Get a list of all materials with the correct fields from the database
     cursor.execute("""
         SELECT 
             material_id,
@@ -718,12 +709,6 @@ def create_material():
     cursor.close()
     return render_template('create_material.html', existing_types=existing_types)
 
-
-
-
-
-
-
 @app.route('/edit_material/<int:material_id>', methods=['GET', 'POST'])
 @login_required
 @role_required(allowed_roles=[1, 3])
@@ -763,7 +748,7 @@ def edit_material(material_id):
     for material in materials_list:
         existing_types.append(material[0])
 
-    # Получаем данные материала для редактирования
+    # Get material data for editing
     cursor.execute("""
         SELECT material_id, name, quantity, cost_per_piece, type
         FROM materials
@@ -1092,7 +1077,6 @@ def edit_plan(plan_id):
     return render_template('edit_plan.html', plan=plan, operator_options=operator_options, book_options=book_options)
 
 
-
 @app.route('/edit_plan/<int:plan_id>', methods=['POST'])
 @role_required(allowed_roles=[1, 3])
 @login_required
@@ -1110,8 +1094,6 @@ def save_plan(plan_id):
         WHERE production_plan_id = %s;
     """, (name, operator, plan_id))
 
-
-    # Получить данные из формы
     # Insert books associated with the plan
     book_row_statuses = request.form.getlist('book_row_status[]')
     plan_book_ids = request.form.getlist('plan_book_id[]')
@@ -1119,24 +1101,23 @@ def save_plan(plan_id):
     min_amounts = request.form.getlist('min_amount[]')
     max_amounts = request.form.getlist('max_amount[]')
 
-
     # Material tables
     for book_row_status, plan_book_id, book_id, min_amount, max_amount in zip(book_row_statuses, plan_book_ids, book_ids, min_amounts, max_amounts):
         if book_row_status == 'new':
-            # Добавить новую строку
+            # Add a new line
             cursor.execute("""
                 INSERT INTO production_plan_books (book_id, book_amount_min, book_amount_max, production_plan_id)
                 VALUES (%s, %s, %s, %s)
             """, (book_id, min_amount, max_amount, plan_id))
         elif book_row_status == 'edited':
-            # Обновить существующую строку)
+            # Update an existing line 
             cursor.execute("""
                         UPDATE production_plan_books
                         SET book_id = %s, book_amount_min = %s, book_amount_max = %s
                         WHERE production_plan_book_id = %s
                     """, (book_id, min_amount, max_amount, plan_book_id))
         elif book_row_status == 'deleted':
-            # Удалить строку
+            # Delete
             cursor.execute("DELETE FROM production_plan_books WHERE production_plan_book_id = %s", (plan_id,))
 
     mysql.connection.commit()
@@ -1380,19 +1361,19 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
 
     production_plan_name = plan.production_plan_name
 
-    # Получаем минимальный и максимальный бюджет
+    # Get the minimum and maximum budget
     min_budget, max_budget = plan.calculate_budget(plan.books)
     optimized_budget = min_budget
 #     optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id)
-    # Проверяем, был ли отправлен POST-запрос для оптимизации бюджета
+    # Check if a POST request was sent for budget optimization
     if request.method == 'POST':
-        optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id, books, machines)  # Оптимизируем бюджет
+        optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id, books, machines)  # Optimize budget
 #         print(optimized_budget)
     
     # Prepare books information for the table   
     books_details = []
     for book in production_plans[production_plan_id].books:
-        production_time = book.production_time  # время производства одной единицы книги в часах
+        production_time = book.production_time  # Production time of one book unit in minutes
         profit_per_unit = book.selling_price - book.production_cost
         profit_per_hour = profit_per_unit / production_time if production_time > 0 else 0
 
@@ -1402,8 +1383,8 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
             "selling_price": book.selling_price,
             "min_amount": production_plans[production_plan_id].min_amount[production_plans[production_plan_id].books.index(book)],
             "max_amount": production_plans[production_plan_id].max_amount[production_plans[production_plan_id].books.index(book)],
-            "production_time": round(production_time, 2),  # округление до 2 знаков
-            "profit_per_hour": round(profit_per_hour, 2)  # округление до 2 знаков
+            "production_time": round(production_time, 2),
+            "profit_per_hour": round(profit_per_hour, 2)
         })
 
     # Get budget and profit details
@@ -1439,7 +1420,7 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
         max_profit=max_profit,
         total_days_min=ceil(total_days_min),
         total_days_max=ceil(total_days_max),
-        optimized_budget=optimized_budget,  # Передаем текущий бюджет
+        optimized_budget=optimized_budget,  # Send optimized budget
         saved_budget = saved_budget,
         saved_days = saved_days
     )
@@ -1536,7 +1517,7 @@ def calculate_by_days():
 
     production_plan_id = int(request.form['production_plan_id'])
 
-    # Получаем данные о планах, книгах и машинах
+    # Get data about plans, books, and machines
     books, machines, production_plans = fetch_books_and_machines()
 
     plan = production_plans.get(production_plan_id)
@@ -1548,7 +1529,7 @@ def calculate_by_days():
     min_budget, max_budget = plan.calculate_budget(books)
 
     time_limit_days = int(request.form['time_limit'])
-    tolerance = 0.005  # Допустимое отклонение
+    tolerance = 0.005  # Acceptable deviation
     low = min_budget
     high = max_budget
     optimal_budget = min_budget
@@ -1562,19 +1543,17 @@ def calculate_by_days():
         )
 
         if total_days_max > time_limit_days:
-            # Если дни превышают лимит, уменьшаем бюджет
+            # If days exceed the limit, reduce the budget
             high = budget - 1
         elif total_days_max >= time_limit_days * (1 - tolerance):
-            # Если укладываемся в допустимый диапазон, сохраняем бюджет
+            # If within the acceptable range, save the budget
             optimal_budget = budget
             break
         else:
-            # Если дней слишком мало, увеличиваем бюджет
+            # If the days are too few, increase the budget
             low = budget + 1
 #         print(total_days_max)
-
-
-    # Возврат результата
+    # result
     return render_template(
         'result.html',
         production_plan_id=production_plan_id,
@@ -1701,12 +1680,12 @@ def optimize_budget(budget, max_budget, production_plans, production_plan_id, bo
             production_plan_id, production_plans, books, machines, high
         )
 
-        # Вычисляем коэффициенты
+        # Calculate coefficients
         koef_mid = profit_mid / mid
         koef_low = profit_low / low
         koef_high = profit_high / high
 
-        # Ищем максимальный коэффициент
+        # Find the maximum coefficient
         if koef_mid >= koef_low and koef_mid >= koef_high:
             best_budget = mid
             best_koef = koef_mid
@@ -1727,10 +1706,10 @@ def get_user_role(user_id):
     elif user_id == 3:
         return 'manager'
     else:
-        return 'unknown'  # На случай, если id не соответствует ни одной роли
+        return 'unknown'  # In case the ID does not match any role
 
 if __name__ == '__main__':
-    # Очищаем сессии при запуске
+    # Clear sessions on startup
     session_dir = app.config['SESSION_FILE_DIR']
     if os.path.exists(session_dir):
         for f in os.listdir(session_dir):
@@ -1741,7 +1720,7 @@ if __name__ == '__main__':
             except Exception as e:
                 print(f'Error deleting session file: {e}')
     
-    # Создаем директорию для сессий, если её нет
+    # Create a directory for sessions if it doesn't exist
     os.makedirs(session_dir, exist_ok=True)
     
     app.run(port=8080, debug=True)
