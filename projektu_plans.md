@@ -64,7 +64,7 @@ Projekta rezultāti sniegs ieguldījumu drukāšanas industrijas attīstībā, s
 ## Konceptu modelis
 ![](KonceptModel.png)
 ## Tehnoloģiju steks
-![](tehnologijuSteks.png)
+![](tehnologiju_steks.png)
 # Novērtējums 
 # Secinājumi
 
