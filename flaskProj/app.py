@@ -15,7 +15,7 @@ from optimize_parallel_test import optimize_production_with_dependencies
 from collections import defaultdict
 from models import Machine, Book, ProductionPlan
 from math import ceil
-
+import psutil
 
 app = Flask(__name__)
 load_dotenv('/var/www/ProjektuLab/flaskProj/pswd.env')
@@ -155,16 +155,6 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# def calculate_min_budget(books):
-#     """
-#     Count minimal budget as sum of minimal quantity of books * cost of production of every book
-#     """
-#     min_budget = sum(
-#         (book['material_cost'] if book['material_cost'] is not None else Decimal(0)) * 
-#         (book['min_books'] if book['min_books'] is not None else 0) 
-#         for book in books
-#     )
-#     return min_budget
 
 def calculate_days_needed(books, is_max):
     total_time = 0  # Time in hours
@@ -1396,7 +1386,7 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
 #     optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id)
     # Проверяем, был ли отправлен POST-запрос для оптимизации бюджета
     if request.method == 'POST':
-        optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id)  # Оптимизируем бюджет
+        optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id, books, machines)  # Оптимизируем бюджет
         print(optimized_budget)
     
     # Prepare books information for the table   
@@ -1457,6 +1447,9 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
 @app.route('/calculate_with_budget', methods=['POST'])
 @login_required
 def calculate_with_budget():
+    # Memory usage tracking
+    process = psutil.Process()
+    start_memory = process.memory_info().rss 
     # Get data from the form
     budget = Decimal(request.form['budget'])  # Convert to Decimal
     production_plan_id = int(request.form['production_plan_id'])
@@ -1527,6 +1520,9 @@ def calculate_with_budget():
             book_start_time = finish_time
         profit += (book.selling_price - book.production_cost) * amount
 
+    end_memory = process.memory_info().rss  
+    memory_used = end_memory - start_memory  
+    print(f"Calculate with Budget: Memory used: {memory_used / (1024 ** 2):.4f} MB")
     # Pass data to the result
     return render_template(
         'result.html',
@@ -1542,6 +1538,9 @@ def calculate_with_budget():
 @app.route('/calculate_by_days', methods=['POST'])
 @login_required
 def calculate_by_days():
+    # Memory usage tracking
+    process = psutil.Process()
+    start_memory = process.memory_info().rss 
     production_plan_id = int(request.form['production_plan_id'])
 
     # Получаем данные о планах, книгах и машинах
@@ -1551,34 +1550,39 @@ def calculate_by_days():
 
     if not plan:
         return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
-    production_plan_name = plan.production_plan_name
 
-    # Получаем минимальный бюджет
+    production_plan_name = plan.production_plan_name
     min_budget, max_budget = plan.calculate_budget(books)
 
-    # Получаем лимит по дням из формы
-    time_limit_days = int(request.form['time_limit'])  
-    budget = min_budget
-    # Начинаем с минимального бюджета
+    time_limit_days = int(request.form['time_limit'])
+    tolerance = 0.005  # Допустимое отклонение
+    low = min_budget
+    high = max_budget
+    optimal_budget = min_budget
+    iterations = 0
 
-    budget, profit, selected_books, schedule_details, total_days_max = calculate_budget_with_time_limit(
-            production_plan_id, production_plans, books, machines, budget)
-    a=0
-    while not (time_limit_days * 0.98 <= total_days_max <= time_limit_days * 1.02):
+    while low <= high:
+        iterations += 1
+        budget = (low + high) // 2
+        _, profit, selected_books, schedule_details, total_days_max = calculate_budget_with_time_limit(
+            production_plan_id, production_plans, books, machines, budget
+        )
 
-        # Проверяем, превышает ли бюджет максимальное значение
-        if budget * Decimal(1.005) > max_budget:
-
-            budget = max_budget  # Используем максимальный бюджет
-            break  # Выходим из цикла
+        if total_days_max > time_limit_days:
+            # Если дни превышают лимит, уменьшаем бюджет
+            high = budget - 1
+        elif total_days_max >= time_limit_days * (1 - tolerance):
+            # Если укладываемся в допустимый диапазон, сохраняем бюджет
+            optimal_budget = budget
+            break
         else:
-            budget = round(budget * Decimal(1.0025))
-        # Вызываем новую функцию для расчета бюджета с учетом времени
-        budget1, profit, selected_books, schedule_details, total_days_max = calculate_budget_with_time_limit(
-            production_plan_id, production_plans, books, machines, budget)
-        a=a+1
-
-
+            # Если дней слишком мало, увеличиваем бюджет
+            low = budget + 1
+        print(total_days_max)
+    # Memory usage after optimization
+    end_memory = process.memory_info().rss  
+    memory_used = end_memory - start_memory  
+    print(f"Calculate by days: Memory used: {memory_used / (1024 ** 2):.4f} MB")
 
     # Возврат результата
     return render_template(
@@ -1593,15 +1597,13 @@ def calculate_by_days():
         )
 
 def calculate_budget_with_time_limit(production_plan_id, production_plans, books, machines, budget):
-    
-    books, machines, production_plans = fetch_books_and_machines()
     plan = production_plans.get(production_plan_id)
     if not plan:
         return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
 
     # First, fill in the budget for each book considering the minimum amount
     selected_books = []
-    total_cost = Decimal(0)  # Use Decimal for precise calculations
+
     remaining_budget = budget
 
     # Sort books by profit_per_minute priority (descending)
@@ -1684,33 +1686,50 @@ def completed_result(production_plan_id, budget):
         total_days = ceil(total_days_max),
         completed = 2
         )
-def optimize_budget(budget, max_budget, production_plans, production_plan_id):
-
-    # Получаем данные о планах, книгах и машинах
-    books, machines, production_plans = fetch_books_and_machines()
-
+def optimize_budget(budget, max_budget, production_plans, production_plan_id, books, machines):
+        # Memory usage tracking
+    process = psutil.Process()
+    start_memory = process.memory_info().rss 
     plan = production_plans.get(production_plan_id)
     if not plan:
         return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
 
-    best_budget=budget;
-    koef = 0
-    bestkoef = 0
-    while budget < max_budget:
-        #print(budget, '$')
-        budget1, profit, selected_books, schedule_details, total_days_max = calculate_budget_with_time_limit(
-            production_plan_id, production_plans, books, machines, budget)
-        #print("Koef", profit/budget)
-        if profit/budget > koef:
-            koef = profit/budget
-            bestkoef = koef
-            best_budget = budget
-        if budget * Decimal(1.01) <= max_budget:
-            budget = budget * Decimal(1.01)
+    low = budget
+    high = max_budget
+    best_budget = budget
+    best_koef = 0
+    iterations = 0
+
+    while high - low > 1:
+        iterations += 1
+        mid = (low + high) // 2
+        _, profit_mid, _, _, _ = calculate_budget_with_time_limit(
+            production_plan_id, production_plans, books, machines, mid
+        )
+        _, profit_low, _, _, _ = calculate_budget_with_time_limit(
+            production_plan_id, production_plans, books, machines, low
+        )
+        _, profit_high, _, _, _ = calculate_budget_with_time_limit(
+            production_plan_id, production_plans, books, machines, high
+        )
+
+        # Вычисляем коэффициенты
+        koef_mid = profit_mid / mid
+        koef_low = profit_low / low
+        koef_high = profit_high / high
+
+        # Ищем максимальный коэффициент
+        if koef_mid >= koef_low and koef_mid >= koef_high:
+            best_budget = mid
+            best_koef = koef_mid
+            low = mid
+        elif koef_low > koef_mid:
+            high = mid
         else:
-            budget = max_budget
-    #print("BestKoef",bestkoef)
-    #print("BestBudget",best_budget)
+            low = mid
+    end_memory = process.memory_info().rss  
+    memory_used = end_memory - start_memory  
+    print(f"Optimize budget: Memory used: {memory_used / (1024 ** 2):.4f} MB")
     return round(best_budget)
 
 def get_user_role(user_id):

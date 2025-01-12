@@ -46,8 +46,8 @@ class ProductionPlan:
         self.max_amount = []
 
     def calculate_budget(self, books):
-        min_budget = sum(book.production_cost * self.min_amount[books.index(book)] for book in self.books)
-        max_budget = sum(book.production_cost * self.max_amount[books.index(book)] for book in self.books)
+        min_budget = sum(book.production_cost * self.min_amount[self.books.index(book)] for book in self.books)
+        max_budget = sum(book.production_cost * self.max_amount[self.books.index(book)] for book in self.books)
         return min_budget, max_budget
 
     def __repr__(self):
