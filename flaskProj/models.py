@@ -13,14 +13,12 @@ class Machine:
         return self.available_at < other.available_at
 
 class Book:
-    def __init__(self, book_id, name, selling_price, hardware_sequence, min_amount, max_amount):
+    def __init__(self, book_id, name, selling_price, hardware_sequence):
         self.book_id = book_id
         self.name = name
         self.selling_price = selling_price
         self.hardware_sequence = hardware_sequence  # List (hardware_id, production_time)
         self.production_time = 0  # Now in minutes
-        self.min_amount = min_amount
-        self.max_amount = max_amount
         self.production_count = 0
         self.production_cost = 0  # Cost of book production
         self.profit_per_minute = 0  # Profit per minute of production
@@ -31,7 +29,7 @@ class Book:
 
     def __repr__(self):
         return (f"Book {self.name} (ID: {self.book_id}, Price: {self.selling_price}, Production Cost: {self.production_cost}, "
-                f"Production Time: {self.production_time} minutes, Profit/Minute: {self.profit_per_minute:.2f})")
+                f"Production Time: {self.production_time} minutes, Profit/Minute: {self.profit_per_minute:.2f}), Min Amount: {self.min_amount}, Max Amount: {self.max_amount}")
     
 class ProductionPlan:
     def __init__(self, production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days,budget,profit,status):
@@ -44,10 +42,12 @@ class ProductionPlan:
         self.budget = budget
         self.profit = profit
         self.status = status
+        self.min_amount = []
+        self.max_amount = []
 
     def calculate_budget(self, books):
-        min_budget = sum(book.production_cost * book.min_amount for book in self.books)
-        max_budget = sum(book.production_cost * book.max_amount for book in self.books)
+        min_budget = sum(book.production_cost * self.min_amount[books.index(book)] for book in self.books)
+        max_budget = sum(book.production_cost * self.max_amount[books.index(book)] for book in self.books)
         return min_budget, max_budget
 
     def __repr__(self):

@@ -155,16 +155,16 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-def calculate_min_budget(books):
-    """
-    Count minimal budget as sum of minimal quantity of books * cost of production of every book
-    """
-    min_budget = sum(
-        (book['material_cost'] if book['material_cost'] is not None else Decimal(0)) * 
-        (book['min_books'] if book['min_books'] is not None else 0) 
-        for book in books
-    )
-    return min_budget
+# def calculate_min_budget(books):
+#     """
+#     Count minimal budget as sum of minimal quantity of books * cost of production of every book
+#     """
+#     min_budget = sum(
+#         (book['material_cost'] if book['material_cost'] is not None else Decimal(0)) * 
+#         (book['min_books'] if book['min_books'] is not None else 0) 
+#         for book in books
+#     )
+#     return min_budget
 
 def calculate_days_needed(books, is_max):
     total_time = 0  # Time in hours
@@ -323,7 +323,6 @@ def save_book(book_id):
     book_name = request.form['name']
     book_description = request.form['description']
     book_selling_price = request.form['selling_price']
-    print(book_name,book_selling_price)
     cursor.execute("""
         UPDATE books
         SET  name = %s, description = %s, selling_price = %s
@@ -542,7 +541,6 @@ def materials():
         })
     role = session.get('role')
     role_id = get_role_id(role)   
-    print(role_id) 
     cursor.close()
     return render_template('materials.html', materials=materials,role_id = role_id)
 
@@ -837,7 +835,6 @@ def create_machine():
         new_type = request.form.get('new_type')
         name = request.form.get('name')
         capacity = request.form.get('capacity')
-        print(type, new_type)
         # If new type selected
         if type == 'new':
             type = new_type
@@ -1132,10 +1129,9 @@ def save_plan(plan_id):
     min_amounts = request.form.getlist('min_amount[]')
     max_amounts = request.form.getlist('max_amount[]')
 
-    print(book_row_statuses, book_ids, min_amounts, max_amounts)
+
     # Material tables
     for book_row_status, plan_book_id, book_id, min_amount, max_amount in zip(book_row_statuses, plan_book_ids, book_ids, min_amounts, max_amounts):
-        print(book_row_status, book_id, min_amount, max_amount)
         if book_row_status == 'new':
             # Добавить новую строку
             cursor.execute("""
@@ -1143,8 +1139,7 @@ def save_plan(plan_id):
                 VALUES (%s, %s, %s, %s)
             """, (book_id, min_amount, max_amount, plan_id))
         elif book_row_status == 'edited':
-            # Обновить существующую строку
-            print("edit")
+            # Обновить существующую строку)
             cursor.execute("""
                         UPDATE production_plan_books
                         SET book_id = %s, book_amount_min = %s, book_amount_max = %s
@@ -1242,7 +1237,7 @@ def fetch_books_and_machines():
 
     books = {}
     for book_id, name, selling_price in books_data:
-        books[book_id] = Book(book_id, name, selling_price, [], 0, 0)
+        books[book_id] = Book(book_id, name, selling_price, [])
 
     machines = {}
     for hardware_id, name, type, capacity in machines_data:
@@ -1256,10 +1251,11 @@ def fetch_books_and_machines():
     for production_plan_book_id, book_id, book_amount_min, book_amount_max, production_plan_id in production_plan_books_data:
         if book_id in books and production_plan_id in production_plans:
             book = books[book_id]
-            book.min_amount = book_amount_min
-            book.max_amount = book_amount_max
+            production_plans[production_plan_id].min_amount.append(book_amount_min)
+            production_plans[production_plan_id].max_amount.append(book_amount_max)
             # Add books to plan in the order they appear
             production_plans[production_plan_id].books.append(book)
+
 
     # Bind equipment to books
     for book in books.values():
@@ -1287,6 +1283,7 @@ def fetch_books_and_machines():
 
 
 def calculate_budget_and_profit(production_plan_id, production_plans, books, machines, use_min_amount=False):
+    books, machines, production_plans = fetch_books_and_machines()
     plan = production_plans.get(production_plan_id)
     if not plan:
         return None, None, None, [], 0, 0
@@ -1306,15 +1303,15 @@ def calculate_budget_and_profit(production_plan_id, production_plans, books, mac
 
     # Calculate minimum budget
     # Calculate maximum budget
-   
+    print(plan)
     for book in plan.books:
-        min_budget += book.production_cost * book.min_amount
-        max_budget += book.production_cost * book.max_amount
+        min_budget += book.production_cost * plan.min_amount[plan.books.index(book)]
+        max_budget += book.production_cost * plan.max_amount[plan.books.index(book)]
    
     sorted_books= sorted(plan.books, key=lambda b: b.profit_per_minute, reverse=True)
     for book in sorted_books:
         # Use min_amount or max_amount depending on the flag
-        book_amount = book.min_amount if use_min_amount else book.max_amount
+        book_amount = plan.min_amount[plan.books.index(book)] if use_min_amount else plan.max_amount[plan.books.index(book)]
 
         total_production_cost += book.production_cost * book_amount
         total_sales += book.selling_price * book_amount
@@ -1361,7 +1358,6 @@ def calculate_budget_and_profit(production_plan_id, production_plans, books, mac
 def display_plans():
     books, machines, production_plans = fetch_books_and_machines()
     role_id = get_role_id(session['role'])
-    print(production_plans)
     viewed_production_plans = {}
     in_progress_production_plans = {}
     completed_production_plans = {}
@@ -1395,7 +1391,7 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
     production_plan_name = plan.production_plan_name
 
     # Получаем минимальный и максимальный бюджет
-    min_budget, max_budget = plan.calculate_budget(books)
+    min_budget, max_budget = plan.calculate_budget(plan.books)
     optimized_budget = min_budget
 #     optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id)
     # Проверяем, был ли отправлен POST-запрос для оптимизации бюджета
@@ -1403,7 +1399,7 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
         optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id)  # Оптимизируем бюджет
         print(optimized_budget)
     
-    # Prepare books information for the table
+    # Prepare books information for the table   
     books_details = []
     for book in production_plans[production_plan_id].books:
         production_time = book.production_time  # время производства одной единицы книги в часах
@@ -1412,10 +1408,10 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
 
         books_details.append({
             "name": book.name,
-            "min_amount": book.min_amount,
-            "max_amount": book.max_amount,
             "production_cost": book.production_cost,
             "selling_price": book.selling_price,
+            "min_amount": production_plans[production_plan_id].min_amount[production_plans[production_plan_id].books.index(book)],
+            "max_amount": production_plans[production_plan_id].max_amount[production_plans[production_plan_id].books.index(book)],
             "production_time": round(production_time, 2),  # округление до 2 знаков
             "profit_per_hour": round(profit_per_hour, 2)  # округление до 2 знаков
         })
@@ -1431,9 +1427,9 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
         return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
 
     # Calculate minimum and maximum profit
-    min_profit = sum((book.selling_price - book.production_cost) * book.min_amount
+    min_profit = sum((book.selling_price - book.production_cost) * plan.min_amount[plan.books.index(book)]
                      for book in production_plans[production_plan_id].books)
-    max_profit = sum((book.selling_price - book.production_cost) * book.max_amount
+    max_profit = sum((book.selling_price - book.production_cost) * plan.max_amount[plan.books.index(book)]
                      for book in production_plans[production_plan_id].books)
     
     if saved_budget is None:
@@ -1481,10 +1477,10 @@ def calculate_with_budget():
 
     # 1. First, add the minimum amount of each book if the budget allows
     for book in sorted_books:
-        min_cost = Decimal(book.production_cost) * book.min_amount  # Cost of minimum amount of book
+        min_cost = Decimal(book.production_cost) * plan.min_amount[plan.books.index(book)]  # Cost of minimum amount of book
 
         if remaining_budget >= min_cost:  # Check if we can run minimum amount
-            selected_books.append((book, book.min_amount))
+            selected_books.append((book, plan.min_amount[plan.books.index(book)]))
             remaining_budget -= min_cost  # Reduce remaining budget
         else:
             # If there is no budget for the minimum amount of the book, skip this book
@@ -1494,7 +1490,7 @@ def calculate_with_budget():
     for book in sorted_books:
         if any(selected_book[0] == book for selected_book in selected_books):  # If book has already been added
             already_added_amount = next(amount for selected_book, amount in selected_books if selected_book == book)
-            max_possible_amount = book.max_amount - already_added_amount
+            max_possible_amount = plan.max_amount[plan.books.index(book)] - already_added_amount
 
             if max_possible_amount > 0:  # Only proceed if there is room to add more
                 # Check if there is enough budget for the maximum amount
@@ -1564,12 +1560,14 @@ def calculate_by_days():
     time_limit_days = int(request.form['time_limit'])  
     budget = min_budget
     # Начинаем с минимального бюджета
+
     budget, profit, selected_books, schedule_details, total_days_max = calculate_budget_with_time_limit(
             production_plan_id, production_plans, books, machines, budget)
-    while not (time_limit_days * 0.99 <= total_days_max <= time_limit_days * 1.01):
+    a=0
+    while not (time_limit_days * 0.98 <= total_days_max <= time_limit_days * 1.02):
 
         # Проверяем, превышает ли бюджет максимальное значение
-        if budget * Decimal(1.0025) > max_budget:
+        if budget * Decimal(1.005) > max_budget:
 
             budget = max_budget  # Используем максимальный бюджет
             break  # Выходим из цикла
@@ -1578,6 +1576,8 @@ def calculate_by_days():
         # Вызываем новую функцию для расчета бюджета с учетом времени
         budget1, profit, selected_books, schedule_details, total_days_max = calculate_budget_with_time_limit(
             production_plan_id, production_plans, books, machines, budget)
+        a=a+1
+
 
 
     # Возврат результата
@@ -1609,10 +1609,10 @@ def calculate_budget_with_time_limit(production_plan_id, production_plans, books
 
     # 1. First, add the minimum amount of each book if the budget allows
     for book in sorted_books:
-        min_cost = Decimal(book.production_cost) * book.min_amount  # Cost of minimum amount of book
+        min_cost = Decimal(book.production_cost) * plan.min_amount[plan.books.index(book)]  # Cost of minimum amount of book
 
         if remaining_budget >= min_cost:  # Check if we can run minimum amount
-            selected_books.append((book, book.min_amount))
+            selected_books.append((book, plan.min_amount[plan.books.index(book)]))
             remaining_budget -= min_cost  # Reduce remaining budget
         else:
             # If there is no budget for the minimum amount of the book, skip this book
@@ -1622,7 +1622,7 @@ def calculate_budget_with_time_limit(production_plan_id, production_plans, books
     for book in sorted_books:
         if any(selected_book[0] == book for selected_book in selected_books):  # If book has already been added
             already_added_amount = next(amount for selected_book, amount in selected_books if selected_book == book)
-            max_possible_amount = book.max_amount - already_added_amount
+            max_possible_amount = plan.max_amount[plan.books.index(book)] - already_added_amount
 
             if max_possible_amount > 0:  # Only proceed if there is room to add more
                 # Check if there is enough budget for the maximum amount
@@ -1697,10 +1697,10 @@ def optimize_budget(budget, max_budget, production_plans, production_plan_id):
     koef = 0
     bestkoef = 0
     while budget < max_budget:
-        print(budget, '$')
+        #print(budget, '$')
         budget1, profit, selected_books, schedule_details, total_days_max = calculate_budget_with_time_limit(
             production_plan_id, production_plans, books, machines, budget)
-        print("Koef", profit/budget)
+        #print("Koef", profit/budget)
         if profit/budget > koef:
             koef = profit/budget
             bestkoef = koef
