@@ -12,44 +12,200 @@
         </a>
         {% endif %}
     </div>
+    <h2>Created plans </h2>
     <table id="sortable-table">
         <thead>
             <tr>
                 <th data-column="0" class="sortable">Production Plan</th>
                 <th data-column="1" class="sortable">Operator</th>
-                <th data-column="2" class="sortable">Time Limit (days)</th>
-
                 <th>Actions</th>
-
             </tr>
         </thead>
         <tbody>
-            {% for plan in production_plans.values() %}
+            {% for plan in viewed_production_plans.values()%}
             <tr>
                 <td>{{ plan.production_plan_name }}</td>
                 <td>{{ plan.operator_name }}</td>
-                <td>{{ plan.time_limit_in_days }}</td>
                 <td>
                     <div class="nav-buttons">
-                    <a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id) }}" class="btnview view-btn">View</a>
-                    {% if role_id != 2 %}
-                    <a href="{{ url_for('edit_plan', plan_id=plan.production_plan_id) }}" class="btn edit-btn">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                    {% endif %}
+                        <a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id) }}" class="btnview view-btn">View</a>
+                        {% if role_id != 2 %}
+                        <a href="{{ url_for('edit_plan', plan_id=plan.production_plan_id) }}" class="btn edit-btn">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{{ url_for('delete_plan', plan_id=plan.production_plan_id) }}"
+                           onclick="return confirmDelete('{{ url_for('delete_plan', plan_id=plan.production_plan_id) }}', '{{ plan.production_plan_name }}')"
+                           class="btn delete-btn">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    <div style="margin: 20px 0;"></div>
+    <h2>In progress plans </h2>
+    <table id="sortable-table1">
+        <thead>
+        <tr>
+            <th data-column="0" class="sortable">Production Plan</th>
+            <th data-column="1" class="sortable">Operator</th>
+            <th data-column="2" class="sortable">Time (days)</th>
+            <th data-column="3" class="sortable">Budget (euro)</th>
+            <th data-column="4" class="sortable">Profit (euro)</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for plan in in_progress_production_plans.values()%}
+        <tr>
+            <td>{{ plan.production_plan_name }}</td>
+            <td>{{ plan.operator_name }}</td>
+            <td>{{ plan.time_limit_in_days }}</td>
+            <td>{{ plan.budget }}</td>
+            <td>{{ plan.profit }}</td>
+            <td>
+                <div class="nav-buttons">
+
+                    <a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id, saved_budget=plan.budget, saved_days=plan.time_limit_in_days )}}" class="btnview view-btn">View</a>
+                    {% if role_id != 2 %}
+                    <a href="{{ url_for('finish_plan', plan_id=plan.production_plan_id, budget=plan.budget, profit=plan.profit, days=plan.time_limit_in_days) }}"
+                    onclick="return confirmFinish('{{ url_for('finish_plan', plan_id=plan.production_plan_id, budget=plan.budget, profit=plan.profit, days=plan.time_limit_in_days) }}', '{{ production_plan_name }}')"
+                    class="create-btn">
+                        Finish
+                    </a>
+                    <a href="{{ url_for('delete_plan', plan_id=plan.production_plan_id) }}"
+                       onclick="return confirmDelete('{{ url_for('delete_plan', plan_id=plan.production_plan_id) }}', '{{ plan.production_plan_name }}')"
+                       class="btn delete-btn">
+                        <i class="fas fa-trash-alt"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <div style="margin: 20px 0;"></div>
+    <h2>Finished plans </h2>
+    <table id="sortable-table2">
+        <thead>
+        <tr>
+            <th data-column="0" class="sortable">Production Plan</th>
+            <th data-column="1" class="sortable">Operator</th>
+            <th data-column="2" class="sortable">Time (days)</th>
+            <th data-column="3" class="sortable">Budget (euro)</th>
+            <th data-column="4" class="sortable">Profit (euro)</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for plan in completed_production_plans.values()%}
+        <tr>
+            <td>{{ plan.production_plan_name }}</td>
+            <td>{{ plan.operator_name }}</td>
+            <td>{{ plan.time_limit_in_days }}</td>
+            <td>{{ plan.budget }}</td>
+            <td>{{ plan.profit}}</td>
+            <td>
+                <div class="nav-buttons">
+                    <a href="{{ url_for('completed_result', production_plan_id=plan.production_plan_id, budget=plan.budget)}}" class="btnview view-btn">View</a>
+                </div>
+
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 <script>
-
+    function confirmDelete(planName) {
+        return confirm("Are you sure you want to delete " + planName + "?");
+    }
     // Table sorting
     document.addEventListener('DOMContentLoaded', () => {
         const table = document.getElementById('sortable-table');
+        const headers = table.querySelectorAll('th.sortable');
+        const tbody = table.querySelector('tbody');
+
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const columnIndex = parseInt(header.getAttribute('data-column'));
+                const isAscending = header.classList.contains('asc');
+                sortTable(tbody, columnIndex, !isAscending);
+
+                // Update header classes
+                headers.forEach(h => h.classList.remove('asc', 'desc'));
+                header.classList.toggle('asc', !isAscending);
+                header.classList.toggle('desc', isAscending);
+            });
+        });
+
+        function sortTable(tbody, columnIndex, ascending) {
+            const rows = Array.from(tbody.rows);
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim();
+                const bText = b.cells[columnIndex].textContent.trim();
+
+                // Numeric sorting for the quantity column
+                if (!isNaN(aText) && !isNaN(bText)) {
+                    return ascending ? aText - bText : bText - aText;
+                }
+                // String sorting for other columns
+                return ascending
+                    ? aText.localeCompare(bText)
+                    : bText.localeCompare(aText);
+            });
+
+            // Append sorted rows back to the tbody
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+        const table = document.getElementById('sortable-table1');
+        const headers = table.querySelectorAll('th.sortable');
+        const tbody = table.querySelector('tbody');
+
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const columnIndex = parseInt(header.getAttribute('data-column'));
+                const isAscending = header.classList.contains('asc');
+                sortTable(tbody, columnIndex, !isAscending);
+
+                // Update header classes
+                headers.forEach(h => h.classList.remove('asc', 'desc'));
+                header.classList.toggle('asc', !isAscending);
+                header.classList.toggle('desc', isAscending);
+            });
+        });
+
+        function sortTable(tbody, columnIndex, ascending) {
+            const rows = Array.from(tbody.rows);
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim();
+                const bText = b.cells[columnIndex].textContent.trim();
+
+                // Numeric sorting for the quantity column
+                if (!isNaN(aText) && !isNaN(bText)) {
+                    return ascending ? aText - bText : bText - aText;
+                }
+                // String sorting for other columns
+                return ascending
+                    ? aText.localeCompare(bText)
+                    : bText.localeCompare(aText);
+            });
+
+            // Append sorted rows back to the tbody
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+        const table = document.getElementById('sortable-table2');
         const headers = table.querySelectorAll('th.sortable');
         const tbody = table.querySelector('tbody');
 

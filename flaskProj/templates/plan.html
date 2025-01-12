@@ -27,7 +27,7 @@
         <form action="/calculate_with_budget" method="POST">
             <label for="budget">Budget Limit (euro):</label>
             <div class="input-button-group">
-                <input type="number" id="budget" name="budget" step="0.01" value="{{ min_budget }}"
+                <input type="number" id="budget" name="budget" step="0.01" value="{{ saved_budget }}"
                        min="{{ min_budget }}" max="{{ max_budget }}" required>
                 <button type="submit">Calculate by Budget</button>
             </div>
@@ -41,7 +41,7 @@
             <label for="time_limit">Time Limit (days):</label>
             <div class="input-button-group">
                 <input type="number" id="time_limit" name="time_limit" step="1"
-                       min="{{ total_days_min }}" max="{{ total_days_max }}" value="{{ total_days_min }}" required>
+                       min="{{ total_days_min }}" max="{{ total_days_max }}" value="{{ saved_days }}" required>
                 <button type="submit">Calculate by Days</button>
             </div>
             <input type="hidden" name="production_plan_id" value="{{ production_plan_id }}">

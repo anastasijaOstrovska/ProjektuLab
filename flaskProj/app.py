@@ -389,12 +389,22 @@ def save_book(book_id):
     mysql.connection.commit()
     return redirect(url_for('books'))
 
+@app.route('/delete_plan/<int:plan_id>')
+@login_required
+@role_required(allowed_roles=[1, 3])
+def delete_plan(plan_id):
+    cursor = mysql.connection.cursor()
+
+    cursor.execute("DELETE FROM production_plan WHERE production_plan_id = %s", (plan_id,))
+    cursor.execute("DELETE FROM production_plan_books WHERE production_plan_id = %s", (plan_id,))
 
 
+    mysql.connection.commit()
 
+    cursor.close()
 
-
-
+    # Redirect to the book list page after deletion
+    return redirect(url_for('display_plans'))
 
 @app.route('/delete_book/<book_id>', methods=['GET'])
 @login_required
@@ -1147,9 +1157,37 @@ def save_plan(plan_id):
     mysql.connection.commit()
     return redirect(url_for('display_plans'))
 
+@app.route('/finish_plan/<int:plan_id>/<int:budget>/<int:profit>/<int:days>')
+@role_required(allowed_roles=[1, 3])
+@login_required
+def finish_plan(plan_id, budget, profit, days):
+    cursor = mysql.connection.cursor()
+    cursor.execute("""
+            UPDATE production_plan
+            SET budget = %s, completed = 2, profit = %s , time_limit_in_days = %s
+            WHERE production_plan_id = %s;
+        """, (budget, profit, days, plan_id))
 
+    mysql.connection.commit()
 
+    cursor.close()
+    return redirect(url_for('display_plans'))
 
+@app.route('/save_optimization/<int:plan_id>/<int:budget>/<int:profit>/<int:days>')
+@role_required(allowed_roles=[1, 3])
+@login_required
+def save_optimization(plan_id, budget, profit, days):
+    cursor = mysql.connection.cursor()
+    cursor.execute("""
+            UPDATE production_plan
+            SET budget = %s, completed = 1, profit = %s , time_limit_in_days = %s
+            WHERE production_plan_id = %s;
+        """, (budget, profit, days, plan_id))
+
+    mysql.connection.commit()
+
+    cursor.close()
+    return redirect(url_for('display_plans'))
 
 #########################################################################################################
 #########################################################################################################
@@ -1176,7 +1214,7 @@ def fetch_books_and_machines():
 
     # Get production plans
     cursor.execute(""" 
-        SELECT p.production_plan_id, p.plan_name, p.operator_id, CONCAT(e.name,' ',e.surname), p.time_limit_in_days FROM production_plan p
+        SELECT p.production_plan_id, p.plan_name, p.operator_id, CONCAT(e.name,' ',e.surname), p.time_limit_in_days, p.budget, p.profit, p.completed FROM production_plan p
         JOIN employees e ON e.employee_id = p.operator_id;
     """)
     production_plan_data = cursor.fetchall()
@@ -1211,8 +1249,8 @@ def fetch_books_and_machines():
         machines[hardware_id] = Machine(hardware_id, name, type, capacity)
 
     production_plans = {}
-    for production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days in production_plan_data:
-        production_plans[production_plan_id] = ProductionPlan(production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days)
+    for production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days, budget, profit, completed in production_plan_data:
+        production_plans[production_plan_id] = ProductionPlan(production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days, budget, profit, completed)
 
     # Bind books to plans considering their order in the production_plan_books table
     for production_plan_book_id, book_id, book_amount_min, book_amount_max, production_plan_id in production_plan_books_data:
@@ -1321,18 +1359,36 @@ def calculate_budget_and_profit(production_plan_id, production_plans, books, mac
 @app.route('/plans')
 @login_required
 def display_plans():
-    # Get the list of all production plans from the database
     books, machines, production_plans = fetch_books_and_machines()
     role_id = get_role_id(session['role'])
-    return render_template('plans.html', production_plans=production_plans,role_id=role_id)
+    print(production_plans)
+    viewed_production_plans = {}
+    in_progress_production_plans = {}
+    completed_production_plans = {}
+    for plan in production_plans:  # Assuming `production_plans` is a list of dictionaries
+        if production_plans.get(plan).status == 0:
+            viewed_production_plans[plan] = production_plans[plan]
+        elif production_plans.get(plan).status == 1:
+            in_progress_production_plans[plan] = production_plans[plan]
+        elif production_plans.get(plan).status == 2:
+            completed_production_plans[plan] = production_plans[plan]
+    
+    return render_template(
+        'plans.html', 
+        viewed_production_plans=viewed_production_plans,
+        in_progress_production_plans=in_progress_production_plans,
+        completed_production_plans=completed_production_plans,
+        role_id=role_id
+    )
 
 
-@app.route('/plan/<int:production_plan_id>', methods=['GET', 'POST'])
+@app.route('/plan/<int:production_plan_id>/', methods=['GET', 'POST'])
 @login_required
-def display_production_plan(production_plan_id):
+def display_production_plan(production_plan_id, saved_budget=None, saved_days=None):
     books, machines, production_plans = fetch_books_and_machines()
     plan = production_plans.get(production_plan_id)
-
+    saved_budget = request.args.get('saved_budget', type=float)
+    saved_days = request.args.get('saved_days', type=int)
     if not plan:
         return f"<h1>Production plan {production_plan_id} not found.</h1>"
 
@@ -1379,7 +1435,11 @@ def display_production_plan(production_plan_id):
                      for book in production_plans[production_plan_id].books)
     max_profit = sum((book.selling_price - book.production_cost) * book.max_amount
                      for book in production_plans[production_plan_id].books)
-
+    
+    if saved_budget is None:
+        saved_budget = min_budget
+    if saved_days is None:
+        saved_days = ceil(total_days_min)
     # Pass data to the template
     return render_template(
         'plan.html',
@@ -1393,7 +1453,9 @@ def display_production_plan(production_plan_id):
         max_profit=max_profit,
         total_days_min=ceil(total_days_min),
         total_days_max=ceil(total_days_max),
-        optimized_budget=optimized_budget  # Передаем текущий бюджет
+        optimized_budget=optimized_budget,  # Передаем текущий бюджет
+        saved_budget = saved_budget,
+        saved_days = saved_days
     )
 
 @app.route('/calculate_with_budget', methods=['POST'])
@@ -1407,7 +1469,7 @@ def calculate_with_budget():
     plan = production_plans.get(production_plan_id)
     if not plan:
         return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
-
+    production_plan_name = plan.production_plan_name
     # First, fill in the budget for each book considering the minimum amount
     selected_books = []
     total_cost = Decimal(0)  # Use Decimal for precise calculations
@@ -1472,6 +1534,7 @@ def calculate_with_budget():
     return render_template(
         'result.html',
         production_plan_id=production_plan_id,
+        production_plan_name=production_plan_name,
         budget=budget,
         profit=profit,
         selected_books=selected_books,
@@ -1602,6 +1665,22 @@ def calculate_budget_with_time_limit(production_plan_id, production_plans, books
         total_days_max
     )
 
+@app.route('/completed_result/<int:production_plan_id>/<int:budget>', methods=['POST','GET'])
+@login_required
+def completed_result(production_plan_id, budget):
+    
+    books, machines, production_plans = fetch_books_and_machines()
+    budget1,profit,selected_books,schedule_details,total_days_max = calculate_budget_with_time_limit(production_plan_id, production_plans, books, machines, budget)
+    return render_template(
+        'result.html',
+        production_plan_id=production_plan_id,
+        budget=budget1,
+        profit=profit,
+        selected_books=selected_books,
+        schedule_details=schedule_details,
+        total_days = ceil(total_days_max),
+        completed = 2
+        )
 def optimize_budget(budget, max_budget, production_plans, production_plan_id):
 
     # Получаем данные о планах, книгах и машинах
