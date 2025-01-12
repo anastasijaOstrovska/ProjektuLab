@@ -7,12 +7,11 @@
     <form class="book-form" method="POST">
         <div class="header-container">
             <h2>Books Information</h2>
-
             <a href="{{ url_for('create_book') }}" class="create-btn">
                 <span>Add New Book</span>
             </a>
         </div>
-
+        
         <table id="sortable-table">
             <thead>
             <tr>
@@ -20,7 +19,9 @@
                 <th data-column="1" class="sortable">Selling Price ($)</th>
                 <th data-column="2" class="sortable">Production Time (minutes)</th>
                 <th data-column="3" class="sortable">Total material cost</th>
+                {% if role_id != 2 %}
                 <th>Actions</th>
+                {% endif %}
             </tr>
             </thead>
             <tbody>
@@ -30,6 +31,7 @@
                 <td>{{ book.selling_price }}</td>
                 <td>{{ book.production_time }}</td>
                 <td>{{ book.total_material_cost }}</td>
+                {% if role_id != 2 %}
                 <td>
                     <div class="nav-buttons">
                         <a href="{{ url_for('edit_book', book_id=book.id) }}" class="btn edit-btn">
@@ -40,6 +42,7 @@
                         </a>
                     </div>
                 </td>
+                {% endif %}
             </tr>
             {% endfor %}
             </tbody>

@@ -34,13 +34,16 @@ class Book:
                 f"Production Time: {self.production_time} minutes, Profit/Minute: {self.profit_per_minute:.2f})")
     
 class ProductionPlan:
-    def __init__(self, production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days):
+    def __init__(self, production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days,budget,profit,status):
         self.production_plan_id = production_plan_id
         self.production_plan_name = production_plan_name
         self.operator_id = operator_id
         self.operator_name = operator_name
         self.time_limit_in_days = time_limit_in_days
         self.books = []
+        self.budget = budget
+        self.profit = profit
+        self.status = status
 
     def calculate_budget(self, books):
         min_budget = sum(book.production_cost * book.min_amount for book in self.books)
@@ -49,4 +52,6 @@ class ProductionPlan:
 
     def __repr__(self):
         return (f"Production Plan {self.production_plan_id} (Operator ID: {self.operator_id}, "
-                f"Time Limit: {self.time_limit_in_days} days, Books: {len(self.books)})")
+                f"Time Limit: {self.time_limit_in_days} days, Books: {len(self.books)}), Status: {self.status}")
+    def get_plan_status(self):
+        return self.status

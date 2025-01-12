@@ -17,7 +17,9 @@
                 <th data-column="0" class="sortable">Machine Name</th>
                 <th data-column="1" class="sortable">Type</th>
                 <th data-column="2" class="sortable">Capacity</th>
+                {% if role_id != 2 %}
                 <th>Actions</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
@@ -26,6 +28,7 @@
                 <td>{{ machine.name }}</td>
                 <td>{{ machine.type }}</td>
                 <td>{{ machine.capacity }}</td>
+                {% if role_id != 2 %}
                 <td class="nav-buttons">
                     <a href="{{ url_for('edit_machine', machine_id=machine.id) }}" class="btn edit-btn">
                         <i class="fas fa-edit"></i>
@@ -36,6 +39,7 @@
                         <i class="fas fa-trash-alt"></i>
                     </a>
                 </td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>

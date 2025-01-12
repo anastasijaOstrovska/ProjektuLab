@@ -5,9 +5,16 @@
 {% block content %}
 <div class="table-container">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% if completed != 2 %}
     <a href="{{ url_for('display_production_plan', production_plan_id=production_plan_id) }}" class="btnview view-btn">
         Back to Optimization Plan
     </a>
+    {% endif %}
+    {% if completed == 2 %}
+    <a href="/plans" class="btnview view-btn">
+        Back to Optimization Plans
+    </a>
+    {% endif %}
    <div style="margin: 30px 0;"></div>
     <h2>Calculation Results</h2>
     <div class="layout-container">
@@ -84,11 +91,19 @@
         <canvas id="hoursChart"></canvas>
     </div>
     <div style="margin: 30px 0;"></div>
-    <a href="{{ url_for('finish_plan', plan_id=production_plan_id) }}"
-       onclick="return confirmFinish('{{ url_for('finish_plan', plan_id=production_plan_id) }}', '{{ production_plan_name }}')"
+    {% if completed != 2 %}
+    <a href="{{ url_for('save_optimization', plan_id=production_plan_id, budget=budget, profit=profit, days=total_days) }}"
+       onclick="return confirmFinish('{{ url_for('save_optimization', plan_id=production_plan_id, budget=budget, profit=profit, days=total_days) }}', '{{ production_plan_name }}')"
+       class="create-btn" style="display: block; margin: 0 auto; width: fit-content;">
+        Save Production plan
+    </a>
+    <br>
+    <a href="{{ url_for('finish_plan', plan_id=production_plan_id, budget=budget, profit=profit, days=total_days) }}"
+       onclick="return confirmFinish('{{ url_for('finish_plan', plan_id=production_plan_id, budget=budget, profit=profit, days=total_days) }}', '{{ production_plan_name }}')"
        class="create-btn" style="display: block; margin: 0 auto; width: fit-content;">
         Finish Production plan
     </a>
+    {% endif %}
     <script>
         function confirmFinish(planName) {
             return confirm("Are you sure you want to finish " + planName + "?");

@@ -11,10 +11,12 @@
             <tr>
                 <th data-column="0" class="sortable">Name</th>
                 <th data-column="1" class="sortable">Surname</th>
+                {% if role_id == 1 %}
                 <th data-column="2" class="sortable">Personal Code</th>
                 <th data-column="3" class="sortable">Phone Number</th>
                 <th data-column="4" class="sortable">Email</th>
                 <th>Actions</th>
+                {% endif %}
             </tr>
             </thead>
             <tbody>
@@ -22,6 +24,7 @@
             <tr>
                 <td>{{ employee.name }}</td>
                 <td>{{ employee.surname }}</td>
+                {% if role_id == 1 %}
                 <td>{{ employee.personal_code }}</td>
                 <td>{{ employee.phone }}</td>
                 <td>{{ employee.email if employee.email else '-' }}</td>
@@ -37,6 +40,7 @@
                         </a>
                     </div>
                 </td>
+                {% endif %}
             </tr>
             {% endfor %}
             </tbody>

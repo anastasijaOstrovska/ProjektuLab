@@ -46,6 +46,17 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+def get_role_id(role):
+    if role == "operator":
+        return 2
+    elif role == "admin":
+        return 1
+    elif role == "manager":
+        return 3
+    else:
+        return None
+    
 def get_role():
     username = session.get('username')
     if username:
@@ -59,6 +70,19 @@ def get_role():
         else:
             role = 'unknown'  # На случай, если роль не найдена
     return(role)
+
+def role_required(allowed_roles):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Получаем role_id из сессии
+            role = session.get('role')
+            role_id = get_role_id(role)  
+            if role_id not in allowed_roles:
+                return redirect(url_for('home'))  
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 @app.route('/')
 def home():
@@ -169,6 +193,8 @@ def books():
     books_list = cursor.fetchall()
     # You can now pass these data to your template or further processing
     books = []
+    role = session.get('role')
+    role_id = get_role_id(role)
     for book in books_list:
         books.append({
             'id': book[0] if book[0] is not None else 0,  # Default value is 0 if None
@@ -176,12 +202,14 @@ def books():
             'selling_price': book[2] if book[2] is not None else 0.0,  # Default value is 0.0 if None
             'production_time': book[3] if book[3] is not None else 0.0,  # Default value is 0.0 if None
             'total_material_cost': book[4] if book[4] is not None else 0.0  # Default value is 0.0 if None
+            
         })
 
-    return render_template('books.html', books=books)
+    return render_template('books.html', books=books, role_id=role_id)
 
 
 @app.route('/edit_book/<int:book_id>', methods=['GET'])
+@role_required(allowed_roles=[1, 3])
 @login_required
 def edit_book(book_id):
     cursor = mysql.connection.cursor()
@@ -287,6 +315,7 @@ def edit_book(book_id):
 
 @app.route('/edit_book/<int:book_id>', methods=['POST'])
 @login_required
+@role_required(allowed_roles=[1, 3])
 def save_book(book_id):
 #     return redirect(url_for('books'))
     cursor = mysql.connection.cursor()
@@ -360,15 +389,26 @@ def save_book(book_id):
     mysql.connection.commit()
     return redirect(url_for('books'))
 
+@app.route('/delete_plan/<int:plan_id>')
+@login_required
+@role_required(allowed_roles=[1, 3])
+def delete_plan(plan_id):
+    cursor = mysql.connection.cursor()
+
+    cursor.execute("DELETE FROM production_plan WHERE production_plan_id = %s", (plan_id,))
+    cursor.execute("DELETE FROM production_plan_books WHERE production_plan_id = %s", (plan_id,))
 
 
+    mysql.connection.commit()
 
+    cursor.close()
 
-
-
+    # Redirect to the book list page after deletion
+    return redirect(url_for('display_plans'))
 
 @app.route('/delete_book/<book_id>', methods=['GET'])
 @login_required
+@role_required(allowed_roles=[1, 3])
 def delete_book(book_id):
     cursor = mysql.connection.cursor()
 
@@ -500,9 +540,11 @@ def materials():
             'cost': material[3],
             'type': material[4]
         })
-        
+    role = session.get('role')
+    role_id = get_role_id(role)   
+    print(role_id) 
     cursor.close()
-    return render_template('materials.html', materials=materials)
+    return render_template('materials.html', materials=materials,role_id = role_id)
 
 @app.route('/employees')
 @login_required
@@ -537,9 +579,11 @@ def employees():
         })
         
     cursor.close()
-    return render_template('employees.html', employees=employees)
+    role_id = get_role_id(session['role'])
+    return render_template('employees.html', employees=employees,role_id=role_id)
 
 @app.route('/delete_employee/<int:employee_id>')
+@role_required(allowed_roles=[1])
 @login_required
 def delete_employee(employee_id):
     cursor = mysql.connection.cursor()
@@ -568,6 +612,7 @@ def delete_employee(employee_id):
     return redirect(url_for('employees'))
 
 @app.route('/edit_employee/<int:employee_id>', methods=['GET', 'POST'])
+@role_required(allowed_roles=[1])
 @login_required
 def edit_employee(employee_id):
     if request.method == 'GET':
@@ -640,9 +685,9 @@ def machines():
             'type': machine[2],
             'capacity': machine[3]
         })
-        
+    role_id = get_role_id(session['role'])    
     cursor.close()
-    return render_template('machines.html', machines=machines)
+    return render_template('machines.html', machines=machines, role_id = role_id)
 
 @app.route('/create_material', methods=['GET', 'POST'])
 @login_required
@@ -694,6 +739,7 @@ def create_material():
 
 @app.route('/edit_material/<int:material_id>', methods=['GET', 'POST'])
 @login_required
+@role_required(allowed_roles=[1, 3])
 def edit_material(material_id):
     cursor = mysql.connection.cursor()
 
@@ -753,6 +799,7 @@ def edit_material(material_id):
     return redirect(url_for('materials'))
 
 @app.route('/delete_material/<int:material_id>')
+@role_required(allowed_roles=[1, 3])
 @login_required
 def delete_material(material_id):
     cursor = mysql.connection.cursor()
@@ -825,6 +872,7 @@ def create_machine():
 
 
 @app.route('/edit_machine/<int:machine_id>', methods=['GET', 'POST'])
+@role_required(allowed_roles=[1, 3])
 @login_required
 def edit_machine(machine_id):
     cursor = mysql.connection.cursor()
@@ -883,6 +931,7 @@ def edit_machine(machine_id):
     return redirect(url_for('machines'))
 
 @app.route('/delete_machine/<int:machine_id>', methods=['GET'])
+@role_required(allowed_roles=[1, 3])
 @login_required
 def delete_machine(machine_id):
     cursor = mysql.connection.cursor()
@@ -913,6 +962,7 @@ def delete_machine(machine_id):
 # plans CRUD operations
 
 @app.route('/create_plan', methods=['GET', 'POST'])
+@role_required(allowed_roles=[1, 3])
 @login_required
 def create_plan():
     cursor = mysql.connection.cursor()
@@ -979,6 +1029,7 @@ def create_plan():
 
 
 @app.route('/edit_plan/<int:plan_id>', methods=['GET'])
+@role_required(allowed_roles=[1, 3])
 @login_required
 def edit_plan(plan_id):
 
@@ -1056,6 +1107,7 @@ def edit_plan(plan_id):
 
 
 @app.route('/edit_plan/<int:plan_id>', methods=['POST'])
+@role_required(allowed_roles=[1, 3])
 @login_required
 def save_plan(plan_id):
 #     return redirect(url_for('books'))
@@ -1121,23 +1173,37 @@ def delete_plan(plan_id):
     # Redirect to the book list page after deletion
     return redirect(url_for('display_plans'))
 
-
-@app.route('/finish_plan/<int:plan_id>')
+@app.route('/finish_plan/<int:plan_id>/<int:budget>/<int:profit>/<int:days>')
+@role_required(allowed_roles=[1, 3])
 @login_required
-def finish_plan(plan_id):
+def finish_plan(plan_id, budget, profit, days):
     cursor = mysql.connection.cursor()
     cursor.execute("""
             UPDATE production_plan
-            SET completed = 2
+            SET budget = %s, completed = 2, profit = %s , time_limit_in_days = %s
             WHERE production_plan_id = %s;
-        """, (plan_id,))
+        """, (budget, profit, days, plan_id))
 
     mysql.connection.commit()
 
     cursor.close()
     return redirect(url_for('display_plans'))
 
+@app.route('/save_optimization/<int:plan_id>/<int:budget>/<int:profit>/<int:days>')
+@role_required(allowed_roles=[1, 3])
+@login_required
+def save_optimization(plan_id, budget, profit, days):
+    cursor = mysql.connection.cursor()
+    cursor.execute("""
+            UPDATE production_plan
+            SET budget = %s, completed = 1, profit = %s , time_limit_in_days = %s
+            WHERE production_plan_id = %s;
+        """, (budget, profit, days, plan_id))
 
+    mysql.connection.commit()
+
+    cursor.close()
+    return redirect(url_for('display_plans'))
 
 #########################################################################################################
 #########################################################################################################
@@ -1164,7 +1230,7 @@ def fetch_books_and_machines():
 
     # Get production plans
     cursor.execute(""" 
-        SELECT p.production_plan_id, p.plan_name, p.operator_id, CONCAT(e.name,' ',e.surname), p.time_limit_in_days FROM production_plan p
+        SELECT p.production_plan_id, p.plan_name, p.operator_id, CONCAT(e.name,' ',e.surname), p.time_limit_in_days, p.budget, p.profit, p.completed FROM production_plan p
         JOIN employees e ON e.employee_id = p.operator_id;
     """)
     production_plan_data = cursor.fetchall()
@@ -1199,8 +1265,8 @@ def fetch_books_and_machines():
         machines[hardware_id] = Machine(hardware_id, name, type, capacity)
 
     production_plans = {}
-    for production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days in production_plan_data:
-        production_plans[production_plan_id] = ProductionPlan(production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days)
+    for production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days, budget, profit, completed in production_plan_data:
+        production_plans[production_plan_id] = ProductionPlan(production_plan_id, production_plan_name, operator_id, operator_name, time_limit_in_days, budget, profit, completed)
 
     # Bind books to plans considering their order in the production_plan_books table
     for production_plan_book_id, book_id, book_amount_min, book_amount_max, production_plan_id in production_plan_books_data:
@@ -1309,18 +1375,36 @@ def calculate_budget_and_profit(production_plan_id, production_plans, books, mac
 @app.route('/plans')
 @login_required
 def display_plans():
-    # Get the list of all production plans from the database
     books, machines, production_plans = fetch_books_and_machines()
+    role_id = get_role_id(session['role'])
     print(production_plans)
-    return render_template('plans.html', production_plans=production_plans)
+    viewed_production_plans = {}
+    in_progress_production_plans = {}
+    completed_production_plans = {}
+    for plan in production_plans:  # Assuming `production_plans` is a list of dictionaries
+        if production_plans.get(plan).status == 0:
+            viewed_production_plans[plan] = production_plans[plan]
+        elif production_plans.get(plan).status == 1:
+            in_progress_production_plans[plan] = production_plans[plan]
+        elif production_plans.get(plan).status == 2:
+            completed_production_plans[plan] = production_plans[plan]
+    
+    return render_template(
+        'plans.html', 
+        viewed_production_plans=viewed_production_plans,
+        in_progress_production_plans=in_progress_production_plans,
+        completed_production_plans=completed_production_plans,
+        role_id=role_id
+    )
 
 
-@app.route('/plan/<int:production_plan_id>', methods=['GET', 'POST'])
+@app.route('/plan/<int:production_plan_id>/', methods=['GET', 'POST'])
 @login_required
-def display_production_plan(production_plan_id):
+def display_production_plan(production_plan_id, saved_budget=None, saved_days=None):
     books, machines, production_plans = fetch_books_and_machines()
     plan = production_plans.get(production_plan_id)
-
+    saved_budget = request.args.get('saved_budget', type=float)
+    saved_days = request.args.get('saved_days', type=int)
     if not plan:
         return f"<h1>Production plan {production_plan_id} not found.</h1>"
 
@@ -1367,7 +1451,11 @@ def display_production_plan(production_plan_id):
                      for book in production_plans[production_plan_id].books)
     max_profit = sum((book.selling_price - book.production_cost) * book.max_amount
                      for book in production_plans[production_plan_id].books)
-
+    
+    if saved_budget is None:
+        saved_budget = min_budget
+    if saved_days is None:
+        saved_days = ceil(total_days_min)
     # Pass data to the template
     return render_template(
         'plan.html',
@@ -1381,7 +1469,9 @@ def display_production_plan(production_plan_id):
         max_profit=max_profit,
         total_days_min=ceil(total_days_min),
         total_days_max=ceil(total_days_max),
-        optimized_budget=optimized_budget  # Передаем текущий бюджет
+        optimized_budget=optimized_budget,  # Передаем текущий бюджет
+        saved_budget = saved_budget,
+        saved_days = saved_days
     )
 
 @app.route('/calculate_with_budget', methods=['POST'])
@@ -1594,6 +1684,22 @@ def calculate_budget_with_time_limit(production_plan_id, production_plans, books
         total_days_max
     )
 
+@app.route('/completed_result/<int:production_plan_id>/<int:budget>', methods=['POST','GET'])
+@login_required
+def completed_result(production_plan_id, budget):
+    
+    books, machines, production_plans = fetch_books_and_machines()
+    budget1,profit,selected_books,schedule_details,total_days_max = calculate_budget_with_time_limit(production_plan_id, production_plans, books, machines, budget)
+    return render_template(
+        'result.html',
+        production_plan_id=production_plan_id,
+        budget=budget1,
+        profit=profit,
+        selected_books=selected_books,
+        schedule_details=schedule_details,
+        total_days = ceil(total_days_max),
+        completed = 2
+        )
 def optimize_budget(budget, max_budget, production_plans, production_plan_id):
 
     # Получаем данные о планах, книгах и машинах
@@ -1615,8 +1721,8 @@ def optimize_budget(budget, max_budget, production_plans, production_plan_id):
             koef = profit/budget
             bestkoef = koef
             best_budget = budget
-        if budget * Decimal(1.001) <= max_budget:
-            budget = budget * Decimal(1.001)
+        if budget * Decimal(1.01) <= max_budget:
+            budget = budget * Decimal(1.01)
         else:
             budget = max_budget
     #print("BestKoef",bestkoef)

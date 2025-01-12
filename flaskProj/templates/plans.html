@@ -6,10 +6,11 @@
 <div class="table-container">
     <div class="header-container">
         <h2>All Production Plans</h2>
-
+        {% if role_id != 2 %}
         <a href="{{ url_for('create_plan') }}" class="create-btn">
             <span>Add New Plan</span>
         </a>
+        {% endif %}
     </div>
     <h2>Created plans </h2>
     <table id="sortable-table">
@@ -21,13 +22,15 @@
             </tr>
         </thead>
         <tbody>
-            {% for plan in production_plans.values() %}
+            {% for plan in viewed_production_plans.values()%}
             <tr>
                 <td>{{ plan.production_plan_name }}</td>
                 <td>{{ plan.operator_name }}</td>
                 <td>
                     <div class="nav-buttons">
                         <a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id) }}" class="btnview view-btn">View</a>
+                        {% if role_id != 2 %}
+
                         <a href="{{ url_for('edit_plan', plan_id=plan.production_plan_id) }}" class="btn edit-btn">
                             <i class="fas fa-edit"></i>
                         </a>
@@ -36,6 +39,7 @@
                            class="btn delete-btn">
                             <i class="fas fa-trash-alt"></i>
                         </a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
@@ -56,23 +60,30 @@
         </tr>
         </thead>
         <tbody>
-        {% for plan in production_plans.values() %}
+        {% for plan in in_progress_production_plans.values()%}
         <tr>
             <td>{{ plan.production_plan_name }}</td>
             <td>{{ plan.operator_name }}</td>
             <td>{{ plan.time_limit_in_days }}</td>
-            <td>{{ plan.time_limit_in_days }}</td>
-            <td>{{ plan.time_limit_in_days }}</td>
+
+            <td>{{ plan.budget }}</td>
+            <td>{{ plan.profit }}</td>
             <td>
                 <div class="nav-buttons">
 
-                    <a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id) }}" class="btnview view-btn">View</a>
-                    <a href="#" class="create-btn">Finish</a>
+                    <a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id, saved_budget=plan.budget, saved_days=plan.time_limit_in_days )}}" class="btnview view-btn">View</a>
+                    {% if role_id != 2 %}
+                    <a href="{{ url_for('finish_plan', plan_id=plan.production_plan_id, budget=plan.budget, profit=plan.profit, days=plan.time_limit_in_days) }}"
+                    onclick="return confirmFinish('{{ url_for('finish_plan', plan_id=plan.production_plan_id, budget=plan.budget, profit=plan.profit, days=plan.time_limit_in_days) }}', '{{ production_plan_name }}')"
+                    class="create-btn">
+                        Finish
+                    </a>
                     <a href="{{ url_for('delete_plan', plan_id=plan.production_plan_id) }}"
                        onclick="return confirmDelete('{{ url_for('delete_plan', plan_id=plan.production_plan_id) }}', '{{ plan.production_plan_name }}')"
                        class="btn delete-btn">
                         <i class="fas fa-trash-alt"></i>
                     </a>
+                    {% endif %}
                 </div>
             </td>
         </tr>
@@ -93,16 +104,16 @@
         </tr>
         </thead>
         <tbody>
-        {% for plan in production_plans.values() %}
+        {% for plan in completed_production_plans.values()%}
         <tr>
             <td>{{ plan.production_plan_name }}</td>
             <td>{{ plan.operator_name }}</td>
             <td>{{ plan.time_limit_in_days }}</td>
-            <td>{{ plan.time_limit_in_days }}</td>
-            <td>{{ plan.time_limit_in_days }}</td>
+            <td>{{ plan.budget }}</td>
+            <td>{{ plan.profit}}</td>
             <td>
                 <div class="nav-buttons">
-                    <a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id) }}" class="btnview view-btn">View</a>
+                    <a href="{{ url_for('completed_result', production_plan_id=plan.production_plan_id, budget=plan.budget)}}" class="btnview view-btn">View</a>
                 </div>
 
             </td>
