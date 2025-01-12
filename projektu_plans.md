@@ -1,4 +1,3 @@
-# Ievads 
 ## Izvēlēta problēmsituācija: Drukāšanas pasūtījumu izpildes plānošana
 
 Dalībnieki:
@@ -7,6 +6,26 @@ Anastasija Ostrovska,
 Sofija Kamuškina, 
 Edvards Bārtulis, 
 Anželika Krasiļņikova.
+
+# Ievads
+
+Mūsdienu drukāšanas industrija saskaras ar vairākām izaicinājumiem, kas saistīti ar ražošanas efektivitātes palielināšanu un resursu optimizāciju. Lēmumu pieņemšana par to, cik daudz un kuras grāmatas ražot, nereti ir sarežgīts process, jo tas prasa ņemt vērā daudzas mainīgās: pieprasījuma prognozes, izmaksu struktūras, noliktavas iespējas un tirgus tendences. Nepareizi pieņemti lēmumi var izraisīt gan zaudējumus, gan neizmantotas peļņas iespējas.
+
+Šī projekta ietvaros tika izstrādāta drukāšanas optimizācijas lietotne, kas paredzēta drukāšanas ražotņu darbības efektivitātes uzlabošanai un peļņas maksimizācijai. Lietotne analizē datus, aprēķina optimālo ražošanas apjomu un sniedz ieteikumus, cik izvelētas grāmatas ražot, lai sasniegtu maksimālu ekonomisko izdevīgumu īsākā laikā.
+
+## Problēmas nostādne
+
+Drukāšanas ražotņu galvenā problēma ir ierobežotie resursi un pieaugošā konkurence tirgū. Lai sasniegtu maksimālu peļņu, ir nepieciešams efektīvi izmantot pieejamos resursus, ņemot vērā gan pieprasījuma izmaiņas, gan ražošanas izmaksu struktūras. Tomēr tradicionālā lēmumu pieņemšana bieži vien ir balstīta uz intuitīviem pieņēmumiem, kas var novest pie neprecīziem rezultātiem.
+
+## Darba un novērtēšanas mērķis
+
+Darba mērķis ir izveidot efektīvu un praktisku drukāšanas optimizācijas rīku, kas:
+
+1. **Sniedz datus balstītus ieteikumus**, kādos apjomos grāmatas ražot, lai sasniegtu maksimālu peļņu.
+2. **Samazina izmaksas** ar automatizētu datu analīzi un prognozēšanas algoritmiem.
+3. **Uzlabo lēmumu pieņemšanas procesu**, samazinot cilvēka pieļauto kļūdu iespējamību un laika patēriņu.
+
+Projekta rezultāti sniegs ieguldījumu drukāšanas industrijas attīstībā, sekmējot tehnoloģiju izmantošanu lēmumu pieņemšanas procesos.
 
 # Lidzīgo risinājumu parskats.
 | Risinājums                                      | Īss apraksts                                                                                                                                                     | Svarīgākās iezīmes                                                                                                                                                  | Ierobežojumi                                                                           | Saite uz projektu                           |
