@@ -49,7 +49,7 @@ Projekta rezultāti sniegs ieguldījumu drukāšanas industrijas attīstībā, s
 |	  6.| Menedžeris vēlas zināt iekārtas izmantošanu, jo jāzina, kuras mašīnas kādam operatoram jāpiešķir                                                                                            | Should have     | Ir        |
 |	  7.| Ražošanas vadītājs vēlas redzēt izgatavoto grāmatu skaitu, jo tas palīdz novērtēt ražotnes peļņu                                                                                            | Should have     | Ir        |
 | 	8.| Administrators vēlas aizsargāt privātdatus, jo pastāv datu zādzības un kiberuzbrukumu draudi                                                                                                | Should have     | Ir        |
-|	  9.| Administrators vēlas veidot lietotāja līmeņus, jo katram darbiniekam jābūt piekļuvei atbilstošai informācijai                                                                               | Should have     | Ir        |
+|	  9.| Administrators vēlas veidot lietotāja līmeņus, jo katram darbiniekam jābūt piekļuvei atbilstošai informācijai                                                                               | Should have     | Daļēji    |
 |  10.| Menedžeris vēlas zināt pieejamos materiālus, jo tas ļauj noteikt, cik grāmatas var saražot                                                                                                  | Should have     | Daļēji    |
 |  11.| Menedžeris vēlas redzēt optimāla risinājuma pamatojumu, jo tas pierāda plāna uzticamību un algoritmu saprotamību                                                                            | Should have     | Ir        |
 |  12.| Operators vēlas zināt mašīnas pieejamību, jo tas optimizē darba procesu                                                                                                                     | Could have      | Nav       |
@@ -61,10 +61,94 @@ Projekta rezultāti sniegs ieguldījumu drukāšanas industrijas attīstībā, s
 |  18.| Menedžeris vēlas redzēt aktuālo informāciju par grāmatu popularitāti, jo tas palīdz pieņemt lēmumus par drukāšanas procesu                                                                  | Would not have  | Nav       |
 |  19.| Menedžeris vēlas zināt pārdošanas prognozes, jo tas ļauj optimizēt ražošanas procesu                                                                                                        | Would not have  | Nav       |
 
+## Algoritma apraksts
+Šis algoritms optimizē ražošanas plānus, pamatojoties uz budžetu vai laika ierobežojumiem. Optimizācija tiek veikta, izmantojot griezumu metodi (dichotomy) un grāmatu atlasīšanu pēc prioritātes (peļņa uz minūti). Galvenās funkcijas ir budžeta optimizācija, laika optimizācija un efektivitātes optimizācija. Lai atrastu visoptimālāko risinājumu, tiek izmantota divdaļīgā (binārā) meklēšana, kas ļauj efektīvi noteikt labāko budžetu vai atbilstību laika ierobežojumam, vienlaikus nodrošinot precīzus aprēķinus ar minimāliem atmiņas izdevumiem.
+
+## Optimizācija pēc budžeta
+Optimizācijai pēc budžeta mērķis ir maksimizēt peļņu vai ieguvumu, pilnībā izlietojot pieejamo budžetu, neņemot vērā laika ierobežojumus. Algoritms sākas ar visu iespēju saraksta analīzi, nosakot to izmaksas un potenciālo peļņu. Pēc tam iespējas tiek sakārtotas pēc to efektivitātes – cik daudz peļņas tās rada uz vienu iztērēto vienību. Visefektīvākās iespējas tiek izvēlētas, līdz budžets ir izsmelts, nodrošinot maksimālu ieguldījuma atdevi.
+Prieksrocība šai pieejai ir tā, ka ierobežota budžeta gadījumā mēs varam maksimizēt peļņu no pieejamā budžeta, neizmantojot pilnu darba dienu (piemēram, ja materiāli 8 darba dienām nav pietiekami, tiks izmantotas 7,7 dienas – praktiski 8 pilnas darba dienas).
+
+## Optimizācija pēc laika
+Optimizācijai pēc laika mērķis ir noteikt, kā vislabāk izmantot piešķirto budžetu konkrētam laika posmam. Šajā pieejā tiek ņemts vērā gan projektu vai aktivitāšu izmaksas, gan to izpildes laiks. Algoritms vispirms izvēlas iespējas, kas dod vislielāko peļņas efektivitāti konkrētajā laika periodā, pēc tam līdzsvaro izvēles, lai izmantotu visu budžetu. Ja aktivitāte nav pilnībā pabeidzama laika posmā, budžets tiek pielāgots tā, lai maksimāli izmantotu atlikušo laiku.
+Šī pieeja ir piemērota, ja budžets ir elastīgs, bet ir svarīgi maksimāli izmantot noteiktu darba dienu skaitu (piemēram, lai paspētu līdz termiņam vai iesniegšanas laikam).
+
+## Optimizācija pēc budžeta efektivitātes
+Optimizācija pēc budžeta efektivitātes koncentrējas uz maksimālu peļņas koeficienta palielināšanu neatkarīgi no tā, vai viss budžets tiek izlietots. Šeit algoritms nosaka kopējo ieguvumu no katras iespējas un atlasīt tikai tās, kas dod visaugstāko koeficientu starp ieguldījumu un atdevi. Tā vietā, lai prioritizētu pilnīgu budžeta izmantošanu, tiek izvirzītas priekšplānā tās darbības, kas nodrošina vislielāko atdevi ar minimāliem ieguldījumiem.
+Šī pieeja ir ideāli piemērota investīcijām – tā aprēķina kapitāla pieauguma koeficientu un izvēlas vērtības, kurās ieguldījums un peļņa atšķiras pēc iespējas vairāk reižu.
+
+
+```mermaid
+graph TD
+    A[Optimizācija pēc budžeta] --> B[Izvēlēt visefektīvākās iespējas - peļņa uz vienu vienību]
+    B --> C[Pilnīga budžeta izmantošana - maksimālā peļņa]
+    C --> F[Rezultāts: Maksimālā peļņa no budžeta]
+
+    X[Optimizācija pēc laika] --> Y[Izvēlēt augstāko peļņas efektivitāti laika posmā ]
+    Y --> G[Izvēlēties iespējas, kas atbilst laika un budžeta ierobežojumiem ]
+    G --> S[Rezultāts: Efektīva izmantošana laika un budžeta ierobežojumos ]
+
+    Z[Optimizācija pēc budžeta efektivitātes] --> W[Atlasīt iespējas  ar augstāko koeficientu - peļņa/budžets]
+    W --> Q[Maksimāla peļņa ar minimālu ieguldījumu]
+    Q --> R[Rezultāts: Ieguvumi pēc kapitāla pieauguma]
+
+
+```
+
 ## Konceptu modelis
 ![](KonceptModel.png)
 ## Tehnoloģiju steks
 ![](tehnoloģiju_steks.png)
+
+# Programmatūras apraksts
+
+## Piekļuve sistēmai
+Lai izmantotu sistēmu, lietotājiem nepieciešams izveidot jaunu kontu. Visiem jaunajiem lietotājiem automātiski tiek piešķirtas operatora tiesības, kas ļauj veikt sākotnējās darbības sistēmā.
+
+## Sistēmas galvenās funkcijas
+Sistēmas galvenajā lapā ir pieejami visi ražošanas plāni:
+
+- **Progresā esošie plāni**: Tie, kas šobrīd tiek realizēti.
+- **Pabeigtie plāni**: Tie, kuru realizācija ir pabeigta.
+
+Ražošanas plānu izveidei nepieciešama grāmatu pievienošana. Mājaslapas navigācija tiek veikta caur sānu paneli, kas atrodas lapas kreisajā pusē. Panelī pieejamas šādas galvenās sadaļas:
+
+- **Plāni**
+- **Grāmatas**
+- **Materiāli**
+- **Iekārtas**
+
+### Grāmatu izveide
+Grāmatu izveides process ietver atbilstošo materiālu un iekārtu pievienošanu. Lai veiktu sagatavošanās darbības, sekojiet šiem soļiem:
+
+#### Materiālu pārvaldība
+1. Atveriet cilni **"Materiāli"**.
+2. Šeit redzams visu jau izveidoto materiālu saraksts.
+3. Pievienojiet jaunu materiālu vai rediģējiet esošos, lai tos varētu izmantot grāmatu ražošanā.
+
+#### Iekārtu pārvaldība
+1. Atveriet cilni **"Iekārtas"**.
+2. Šeit redzams visu pieejamo iekārtu saraksts.
+3. Pievienojiet jaunu iekārtu vai rediģējiet esošās, lai tās būtu pieejamas grāmatu ražošanai.
+
+#### Grāmatu pievienošana
+1. Atveriet cilni **"Grāmatas"**.
+2. Noklikšķiniet uz pogas **"Izveidot jaunu grāmatu"** un ievadiet informāciju par grāmatu.
+3. Pievienojiet nepieciešamo informāciju par materiāliem un iekārtām.
+4. Kad grāmata ir izveidota, var pāriet pie ražošanas plāna izveides.
+
+### Ražošanas plānu izveide
+Ražošanas plānu izveide ir pieejama tikai menedžeriem un administratoriem. Lai izveidotu jaunu plānu:
+
+1. Atveriet cilni **"Plāni"**.
+2. Noklikšķiniet uz pogas **"Add New Plan"** un ievadiet sekojošo informāciju:
+   - **Plāna nosaukums**
+   - **Operators**: Izvēlieties atbildīgo personu.
+   - **Grāmatas**: Izvēlieties vienu vai vairākas grāmatas.
+   - **Plāna realizācijas opcijas**
+
+Pēc plāna izveides izvēlieties vienu no trim realizācijas iespējām:
+
+- **Automātiskais budžets**: Sistēma piedāvā optimālu budžetu.
 # Novērtējums 
 # Secinājumi
 
