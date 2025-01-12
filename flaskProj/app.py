@@ -1105,7 +1105,37 @@ def save_plan(plan_id):
     mysql.connection.commit()
     return redirect(url_for('display_plans'))
 
+@app.route('/delete_plan/<int:plan_id>')
+@login_required
+def delete_plan(plan_id):
+    cursor = mysql.connection.cursor()
 
+    cursor.execute("DELETE FROM production_plan WHERE production_plan_id = %s", (plan_id,))
+    cursor.execute("DELETE FROM production_plan_books WHERE production_plan_id = %s", (plan_id,))
+
+
+    mysql.connection.commit()
+
+    cursor.close()
+
+    # Redirect to the book list page after deletion
+    return redirect(url_for('display_plans'))
+
+
+@app.route('/finish_plan/<int:plan_id>')
+@login_required
+def finish_plan(plan_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute("""
+            UPDATE production_plan
+            SET completed = 2
+            WHERE production_plan_id = %s;
+        """, (plan_id,))
+
+    mysql.connection.commit()
+
+    cursor.close()
+    return redirect(url_for('display_plans'))
 
 
 
@@ -1365,6 +1395,7 @@ def calculate_with_budget():
     plan = production_plans.get(production_plan_id)
     if not plan:
         return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
+    production_plan_name = plan.production_plan_name
 
     # First, fill in the budget for each book considering the minimum amount
     selected_books = []
@@ -1430,6 +1461,7 @@ def calculate_with_budget():
     return render_template(
         'result.html',
         production_plan_id=production_plan_id,
+        production_plan_name=production_plan_name,
         budget=budget,
         profit=profit,
         selected_books=selected_books,
@@ -1449,6 +1481,7 @@ def calculate_by_days():
 
     if not plan:
         return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
+    production_plan_name = plan.production_plan_name
 
     # Получаем минимальный бюджет
     min_budget, max_budget = plan.calculate_budget(books)
@@ -1477,6 +1510,7 @@ def calculate_by_days():
     return render_template(
         'result.html',
         production_plan_id=production_plan_id,
+        production_plan_name=production_plan_name,
         budget=budget,
         profit=profit,
         selected_books=selected_books,

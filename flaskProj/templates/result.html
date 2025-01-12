@@ -84,10 +84,16 @@
         <canvas id="hoursChart"></canvas>
     </div>
     <div style="margin: 30px 0;"></div>
-    <a href="{{ url_for('display_production_plan', production_plan_id=production_plan_id) }}" class="btnview view-btn">
-        Back to Optimization Plan
+    <a href="{{ url_for('finish_plan', plan_id=production_plan_id) }}"
+       onclick="return confirmFinish('{{ url_for('finish_plan', plan_id=production_plan_id) }}', '{{ production_plan_name }}')"
+       class="create-btn" style="display: block; margin: 0 auto; width: fit-content;">
+        Finish Production plan
     </a>
     <script>
+        function confirmFinish(planName) {
+            return confirm("Are you sure you want to finish " + planName + "?");
+        }
+
         // Production Chart
         const productionData = {
             labels: [{% for book, amount in selected_books %}"{{ book.name }}"{% if not loop.last %}, {% endif %}{% endfor %}],

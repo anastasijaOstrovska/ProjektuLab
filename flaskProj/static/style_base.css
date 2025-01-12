@@ -562,7 +562,9 @@ button[type="button"]:hover {
     border: 1px solid #ccc; /* Add a border to distinguish the charts */
 }
 
-
+a {
+    text-decoration: none;
+}
 
 @media (max-width: 768px) {
     .sidebar {
