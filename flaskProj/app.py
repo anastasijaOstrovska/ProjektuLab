@@ -15,7 +15,6 @@ from optimize_parallel_test import optimize_production_with_dependencies
 from collections import defaultdict
 from models import Machine, Book, ProductionPlan
 from math import ceil
-import psutil
 
 app = Flask(__name__)
 load_dotenv('/var/www/ProjektuLab/flaskProj/pswd.env')
@@ -87,13 +86,13 @@ def role_required(allowed_roles):
 @app.route('/')
 def home():
     if 'username' in session:
-        return redirect(url_for('main'))
+        return redirect(url_for('display_plans'))
     return render_template('home.html')
 
 @app.route('/main')
 @login_required
 def main():
-    return render_template('main.html')
+    return redirect(url_for('display_plans'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -124,7 +123,7 @@ def register():
             session['username'] = username  # Добавляем пользователя в сессию
             session['role'] = get_role()
             session.permanent = True
-            return redirect(url_for('main'))  # Перенаправляем на main
+            return redirect(url_for('display_plans'))  # Перенаправляем на main
         except Exception as e:
             return f"Error occurred: {str(e)}"
         finally:
@@ -604,7 +603,7 @@ def delete_employee(employee_id):
 @login_required
 def edit_employee(employee_id):
     if request.method == 'GET':
-        print("get used")
+#         print("get used")
         cursor = mysql.connection.cursor()
         cursor.execute("SELECT employee_id, name, surname, personal_code, phone_number, email FROM employees WHERE employee_id = %s", (employee_id,))
 
@@ -984,7 +983,7 @@ def create_plan():
         return redirect(url_for('display_plans'))
 
     # Fetch available books from the database
-    cursor.execute("SELECT book_id, name FROM books")
+    cursor.execute("SELECT book_id, name FROM books ORDER BY name")
     books = cursor.fetchall()
 
     # Group books by type
@@ -1040,7 +1039,8 @@ def edit_plan(plan_id):
                       b.book_id, b.name, ppl.book_amount_min, ppl.book_amount_max, ppl.production_plan_book_id
                       FROM production_plan_books ppl
                       JOIN books b ON b.book_id = ppl.book_id
-                      where ppl.production_plan_id = %s """, (plan_id,))
+                      where ppl.production_plan_id = %s
+                      """, (plan_id,))
     books_list = cursor.fetchall()
 
     for book in books_list:
@@ -1054,7 +1054,7 @@ def edit_plan(plan_id):
 
 
 # Fetch available books from the database
-    cursor.execute("SELECT book_id, name FROM books")
+    cursor.execute("SELECT book_id, name FROM books ORDER BY name")
     books = cursor.fetchall()
 
     # Group books by type
@@ -1293,7 +1293,7 @@ def calculate_budget_and_profit(production_plan_id, production_plans, books, mac
 
     # Calculate minimum budget
     # Calculate maximum budget
-    print(plan)
+#     print(plan)
     for book in plan.books:
         min_budget += book.production_cost * plan.min_amount[plan.books.index(book)]
         max_budget += book.production_cost * plan.max_amount[plan.books.index(book)]
@@ -1387,7 +1387,7 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
     # Проверяем, был ли отправлен POST-запрос для оптимизации бюджета
     if request.method == 'POST':
         optimized_budget = optimize_budget(min_budget, max_budget, production_plans, production_plan_id, books, machines)  # Оптимизируем бюджет
-        print(optimized_budget)
+#         print(optimized_budget)
     
     # Prepare books information for the table   
     books_details = []
@@ -1447,9 +1447,7 @@ def display_production_plan(production_plan_id, saved_budget=None, saved_days=No
 @app.route('/calculate_with_budget', methods=['POST'])
 @login_required
 def calculate_with_budget():
-    # Memory usage tracking
-    process = psutil.Process()
-    start_memory = process.memory_info().rss 
+
     # Get data from the form
     budget = Decimal(request.form['budget'])  # Convert to Decimal
     production_plan_id = int(request.form['production_plan_id'])
@@ -1520,9 +1518,6 @@ def calculate_with_budget():
             book_start_time = finish_time
         profit += (book.selling_price - book.production_cost) * amount
 
-    end_memory = process.memory_info().rss  
-    memory_used = end_memory - start_memory  
-    print(f"Calculate with Budget: Memory used: {memory_used / (1024 ** 2):.4f} MB")
     # Pass data to the result
     return render_template(
         'result.html',
@@ -1538,9 +1533,7 @@ def calculate_with_budget():
 @app.route('/calculate_by_days', methods=['POST'])
 @login_required
 def calculate_by_days():
-    # Memory usage tracking
-    process = psutil.Process()
-    start_memory = process.memory_info().rss 
+
     production_plan_id = int(request.form['production_plan_id'])
 
     # Получаем данные о планах, книгах и машинах
@@ -1578,11 +1571,8 @@ def calculate_by_days():
         else:
             # Если дней слишком мало, увеличиваем бюджет
             low = budget + 1
-        print(total_days_max)
-    # Memory usage after optimization
-    end_memory = process.memory_info().rss  
-    memory_used = end_memory - start_memory  
-    print(f"Calculate by days: Memory used: {memory_used / (1024 ** 2):.4f} MB")
+#         print(total_days_max)
+
 
     # Возврат результата
     return render_template(
@@ -1687,9 +1677,7 @@ def completed_result(production_plan_id, budget):
         completed = 2
         )
 def optimize_budget(budget, max_budget, production_plans, production_plan_id, books, machines):
-        # Memory usage tracking
-    process = psutil.Process()
-    start_memory = process.memory_info().rss 
+
     plan = production_plans.get(production_plan_id)
     if not plan:
         return f"<h1>Production plan with ID {production_plan_id} not found.</h1>"
@@ -1727,9 +1715,8 @@ def optimize_budget(budget, max_budget, production_plans, production_plan_id, bo
             high = mid
         else:
             low = mid
-    end_memory = process.memory_info().rss  
-    memory_used = end_memory - start_memory  
-    print(f"Optimize budget: Memory used: {memory_used / (1024 ** 2):.4f} MB")
+
+
     return round(best_budget)
 
 def get_user_role(user_id):
