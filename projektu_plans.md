@@ -148,7 +148,7 @@ Ražošanas plānu izveide ir pieejama tikai menedžeriem un administratoriem. L
 
 Pēc plāna izveides izvēlieties vienu no trim realizācijas iespējām:
 
-- **Automātiskais budžets**: Sistēma piedāvā optimālu budžetu.
+- **Efiktīvākais budžets**: Sistēma piedāvā optimālu budžetu.
 # Novērtējums 
 # Secinājumi
 
