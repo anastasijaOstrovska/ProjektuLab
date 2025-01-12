@@ -149,6 +149,34 @@ Ražošanas plānu izveide ir pieejama tikai menedžeriem un administratoriem. L
 Pēc plāna izveides izvēlieties vienu no trim realizācijas iespējām:
 
 - **Efiktīvākais budžets**: Sistēma piedāvā optimālu budžetu.
+
 # Novērtējums 
+
+## Novērējumu plāns 
+
+### **"Mērķis:"** Novērtēt optimizācijas kvalitāti atkarībā no algoritma, iekārtu kopas, grāmatu variācijas un grāmatu minimālas drukāšanas daudzuma. 
+
+### Ieejas mainīgie
+1. Grāmatu variācija (5, 10) 
+2. Grāmatu minimālais drukāšanas daudzums ( 10, 100, 500)
+3. Iekārtu daudzums (5, 10, 20)
+
+### Algoritms 
+1. Optimizācija pēc budžeta
+2. Optimizācija pēc laika )
+   
+### Novērtēšanas mēri 
+Programmas laiks(st.), peļņa (eiro)
+
 # Secinājumi
 
+## Dalibnieku ieguldījums
+| Vārds              | Loma un pienākumi                                                                                                                                                     |
+|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Edvards Bārtulis** | Piedalījās konceptuālā modeļa un tehnoloģiju steka izstrādē, izstrādāja optimizācijas algoritmu un izveidoja koda un tīmekļa pārlūka sākotnējo struktūru. Izstrādāja lietotāju sesiju pārvaldības risinājumu un piedalījās tīmekļa CRUD funkcionalitātes izstrādē. Bija atbildīgs par optimizācijas rezultātu vizualizāciju. Piedalījās tīmekļa pārlūka savienojumu ar datu bāzi. |
+| **Anastasija Ostrovska** | Piedalījās konceptuālā modeļa izstrādē un lietotāju stāstu veidošanā. Integrēja GitHub repozitoriju ar projekta virtuālo mašīnu, nodrošinot visiem dalībniekiem piekļuvi repozitorijam no lokālās vides. Izstrādāja tīmekļa pārlūka vizuālo interfeisu un piedalījās tīmekļa CRUD funkcionalitātes izstrādē. Veicināja novērtēšanas eksperimentu īstenošanu. |
+| **Sofija Kamuškina** | Piedalījās konceptuālā modeļa izstrādē un aktīvi iesaistījās datu bāzes izstrādes procesā. Izveidoja lietotāju stāstus un izstrādāja darba plakātu, lai efektīvi prezentētu komandas projektu. |
+| **Aleksandrs Kozaļetovs** | Piedalījās konceptuālā modeļa un lietotāju stāstu izveidē. Izveidoja projekta izstrādes vidi, izmantojot Azure virtuālo mašīnu, izstrādāja datu bāzes struktūru un nodrošināja tīmekļa pārlūka savienojumu ar datu bāzi. Iesaistījās tīmekļa pārlūka infrastruktūras izstrādē, uzturēja datu bāzes struktūru un izstrādāja vaicājumus back-end tīmekļa pārlūkam. Bija atbildīgs par eksperimentu sagatavošanu, kā arī par datu bāzes, servera un tīmekļa infrastruktūras uzturēšanu. |
+| **Anželika Krasiļņikova** | Piedalījās konceptuālā modeļa izstrādē un lietotāju stāstu veidošanā. Izstrādāja Python Flask projektu, pilnveidojot sākotnējo ('nulles') koda struktūru un izveidojot tīmekļa CRUD funkcionalitāti. Iesaistījās vaicājumu izstrādē back-end tīmekļa pārlūkam un piedalījās tīmekļa pārlūka vizuālā interfeisa izveidē. Veicināja novērtēšanas eksperimentu īstenošanu. |
+
+## Saite uz projektu: https://boberp.westeurope.cloudapp.azure.com/
