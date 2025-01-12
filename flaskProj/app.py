@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
-import optimize
+# import optimize
 import random
 from decimal import Decimal
 import math
@@ -11,7 +11,7 @@ import heapq
 from functools import wraps
 from datetime import timedelta
 from flask_session import Session
-from optimize_parallel_test import optimize_production_with_dependencies
+# from optimize_parallel_test import optimize_production_with_dependencies
 from collections import defaultdict
 from models import Machine, Book, ProductionPlan
 from math import ceil
