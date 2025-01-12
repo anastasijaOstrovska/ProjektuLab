@@ -386,6 +386,15 @@ tr:hover {
     background-color: #5c7c9c;
 }
 
+.fin-btn {
+    background-color: var(--primary);
+    color: white;
+}
+
+.fin-btn:hover {
+    background-color: var(--primary-dark);
+}
+
 
 .nav-buttons {
     display: flex;

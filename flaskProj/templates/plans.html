@@ -75,7 +75,7 @@
                     {% if role_id != 2 %}
                     <a href="{{ url_for('finish_plan', plan_id=plan.production_plan_id, budget=plan.budget, profit=plan.profit, days=plan.time_limit_in_days) }}"
                     onclick="return confirmFinish('{{ url_for('finish_plan', plan_id=plan.production_plan_id, budget=plan.budget, profit=plan.profit, days=plan.time_limit_in_days) }}', '{{ production_plan_name }}')"
-                    class="create-btn">
+                    class="btnview fin-btn">
                         Finish
                     </a>
                     <a href="{{ url_for('delete_plan', plan_id=plan.production_plan_id) }}"

@@ -1157,22 +1157,6 @@ def save_plan(plan_id):
     mysql.connection.commit()
     return redirect(url_for('display_plans'))
 
-@app.route('/delete_plan/<int:plan_id>')
-@login_required
-def delete_plan(plan_id):
-    cursor = mysql.connection.cursor()
-
-    cursor.execute("DELETE FROM production_plan WHERE production_plan_id = %s", (plan_id,))
-    cursor.execute("DELETE FROM production_plan_books WHERE production_plan_id = %s", (plan_id,))
-
-
-    mysql.connection.commit()
-
-    cursor.close()
-
-    # Redirect to the book list page after deletion
-    return redirect(url_for('display_plans'))
-
 @app.route('/finish_plan/<int:plan_id>/<int:budget>/<int:profit>/<int:days>')
 @role_required(allowed_roles=[1, 3])
 @login_required
