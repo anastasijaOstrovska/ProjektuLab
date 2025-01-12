@@ -47,11 +47,12 @@
         <tbody>
         {% for book in plan.books %}
         <tr>
+          <input type="hidden" name="plan_book_id[]" value="{{book.plan_book_id}}">
           <input type="hidden" name="book_row_status[]" value="unchanged">
           <td>
             <select name="book_id[]" class="book-name" required>
               {% for option in book_options %}
-              <option value="{{ id }}" {% if book.id == option.id %}selected{% endif %}>{{ option.name }}</option>
+              <option value="{{ option.id }}" {% if book.id == option.id %}selected{% endif %}>{{ option.name }}</option>
               {% endfor %}
             </select>
           </td>
@@ -101,6 +102,7 @@
 
 
     row.innerHTML = `
+            <input type="hidden" name="plan_book_id[]" value="new">
             <input type="hidden" name="book_row_status[]" value="new">
             <td>
                 <select name="book_id[]" class="book-name" required>

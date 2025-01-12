@@ -999,7 +999,7 @@ def edit_plan(plan_id):
         }
     # Books list
     cursor.execute("""SELECT
-                      b.book_id, b.name, ppl.book_amount_min, ppl.book_amount_max
+                      b.book_id, b.name, ppl.book_amount_min, ppl.book_amount_max, ppl.production_plan_book_id
                       FROM production_plan_books ppl
                       JOIN books b ON b.book_id = ppl.book_id
                       where ppl.production_plan_id = %s """, (plan_id,))
@@ -1010,7 +1010,8 @@ def edit_plan(plan_id):
             'id': book[0],
             'name': book[1],
             'min_amount': book[2],
-            'max_amount': book[3]
+            'max_amount': book[3],
+            'plan_book_id': book[4]
         })
 
 
@@ -1074,13 +1075,15 @@ def save_plan(plan_id):
     # Получить данные из формы
     # Insert books associated with the plan
     book_row_statuses = request.form.getlist('book_row_status[]')
+    plan_book_ids = request.form.getlist('plan_book_id[]')
     book_ids = request.form.getlist('book_id[]')
     min_amounts = request.form.getlist('min_amount[]')
     max_amounts = request.form.getlist('max_amount[]')
 
-
+    print(book_row_statuses, book_ids, min_amounts, max_amounts)
     # Material tables
-    for book_row_status, book_id, min_amount, max_amount in zip(book_row_statuses, book_ids, min_amounts, max_amounts):
+    for book_row_status, plan_book_id, book_id, min_amount, max_amount in zip(book_row_statuses, plan_book_ids, book_ids, min_amounts, max_amounts):
+        print(book_row_status, book_id, min_amount, max_amount)
         if book_row_status == 'new':
             # Добавить новую строку
             cursor.execute("""
@@ -1089,11 +1092,12 @@ def save_plan(plan_id):
             """, (book_id, min_amount, max_amount, plan_id))
         elif book_row_status == 'edited':
             # Обновить существующую строку
+            print("edit")
             cursor.execute("""
                         UPDATE production_plan_books
                         SET book_id = %s, book_amount_min = %s, book_amount_max = %s
                         WHERE production_plan_book_id = %s
-                    """, (book_id, min_amount, max_amount, plan_id))
+                    """, (book_id, min_amount, max_amount, plan_book_id))
         elif book_row_status == 'deleted':
             # Удалить строку
             cursor.execute("DELETE FROM production_plan_books WHERE production_plan_book_id = %s", (plan_id,))
