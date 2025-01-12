@@ -6,10 +6,11 @@
 <div class="table-container">
     <div class="header-container">
         <h2>All Production Plans</h2>
-
+        {% if role_id != 2 %}
         <a href="{{ url_for('create_plan') }}" class="create-btn">
             <span>Add New Plan</span>
         </a>
+        {% endif %}
     </div>
     <table id="sortable-table">
         <thead>
@@ -17,7 +18,9 @@
                 <th data-column="0" class="sortable">Production Plan</th>
                 <th data-column="1" class="sortable">Operator</th>
                 <th data-column="2" class="sortable">Time Limit (days)</th>
+
                 <th>Actions</th>
+
             </tr>
         </thead>
         <tbody>
@@ -29,9 +32,11 @@
                 <td>
                     <div class="nav-buttons">
                     <a href="{{ url_for('display_production_plan', production_plan_id=plan.production_plan_id) }}" class="btnview view-btn">View</a>
+                    {% if role_id != 2 %}
                     <a href="{{ url_for('edit_plan', plan_id=plan.production_plan_id) }}" class="btn edit-btn">
                         <i class="fas fa-edit"></i>
                     </a>
+                    {% endif %}
                     </div>
                 </td>
             </tr>
