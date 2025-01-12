@@ -20,27 +20,27 @@ Anželika Krasiļņikova.
 
 # Tehniskais risinājums
 ## Lietotāju stāsti
-| Numurs | Stāsts                                                                                                                                                                                                | Prioritāte      |
-|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
-|      1 | Operators vēlas redzēt pieprasījuma plānu un drukāšanas secību, jo ērtākai lietošanai vajadzētu sakārtot un optimizēt darba procesu.                                                                  | Must have       |
-|      2 | Ražošanas vadītājs vēlas pievienot un rediģēt pieprasījumu un iekārtu sarakstu, jo tas dod iespēju personalizēt un koriģēt procesu                                                                    | Must have       |
-|      3 | Ražošanas vadītājs vēlas mazākā laikā iegūt lielāko peļņu, jo uzņēmumam jāmaksimizē peļņa īsākā laikā.                                                                                                | Must have       |
-|      4 | Operators vēlas zināt mašīnas pieejamību, jo ātrākai darbībai jāoptimizē darba process.                                                                                                               | Should have     |
-|      5 | Operators vēlas stabilu pieslēgumu programmai(vai mājaslapai), jo ir jāsamazina darba pārtraukumi.                                                                                                    | Should have     |
-|      6 | Operators vēlas redzēt un mainīt plāna izpildes stāvokli, jo redzot izpildītus darba punktus, vieglāk sekot plānam                                                                                    | Should have     |
-|      7 | Ražošanas vadītājs vēlas zināt informāciju par iekārtas izmantošanu, jo viņam jāzina, kuras mašīnas kādam operatoram jāizmanto plāna izpildei.                                                        | Should have     |
-|      8 | Ražošanas vadītājs vēlas redzēt informāciju par to, cik daudz grāmatas ir izveidotas, jo uzņēmumam jāredz ražotnes peļņa.                                                                             | Should have     |
-|      9 | Ražošanas vadītājs vēlas, lai privātdati būtu aizsargāti, jo pastāv datu zagšanas draudi un kiberuzbrukumi.                                                                                           | Should have     |
-|     10 | Ražošanas vadītājs vēlas iegūst iespēju veidot dažādus lietotāja līmeņus, jo visiem darbiniekiem ir jābūt savs profils, lai redzētu attiecīgo informāciju, atbilstošu darbinieka darba pienākumiem.  | Should have     |
-|     11 | Ražošanas vadītājs vēlas zināt cik daudz ir pieejami materiāli, jo viņam ir jāzina cik daudz grāmatas var saražot                                                                                     | Should have     |
-|     12 | Ražošanas vadītājs vēlas redzēt optimāla risinājuma pamatojumu, jo jāpierāda plāna uzticamība un jāpalielina procesa algoritmu saprotamība.                                                           | Should have     |
-|     13 | Operators vēlas redzēt instrukcijas plānā, jo viņam jāzina darba secība katrai grāmatai plānā atsevišķi                                                                                               | Could have      |
-|     14 | Ražošanas vadītājs vēlas redzēt alternatīvas iespējamai peļņai un grāmatu drukāšanai, jo ir nepieciešams saglabāt izvēles iespēju un analizēt alternatīvas.                                           | Could have      |
-|     15 | Ražošanas vadītājs vēlas redzēt grāmatu veidu un daudzumu vēsturi, jo jānovērtē un jāanalizē iepriekšējo drukāšanas plānošanu.                                                                        | Could have      |
-|     16 | Ražošanas vadītājs vēlas zināt gada ienākumus, jo jānovērtē ražošanas produktivitāte un rentabilitāte                                                                                                 | Could have      |
-|     17 | Ražošanas vadītājs vēlas zināt darba plānu uz fiksētu laiku(piem.nedēļu vai mēnesi), jo ir jāplāno darbinieku darba laiku un citus resursus.                                                          | Could have      |
-|     18 | Ražošanas vadītājs vēlas redzēt aktuālo informāciju par grāmatu popularitāti, jo jāpieņem lēmums par grāmatu drukāšanu procesu.                                                                      | Would not have  |
-|     19 | Ražošanas vadītājs vēlas zināt pārdošanas prognozes, jo ir jāoptimizē ražošanas procesu                                                                                                               | Would not have  |
+| Nr. | Stāsts                                                                                                                                                                                      | Prioritāte      | Izpildīts |
+|-----|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|-----------|
+|   1.| Operators vēlas redzēt pieprasījuma plānu un drukāšanas secību, jo tas palīdz sakārtot un optimizēt darba procesu                                                                           | Must have       | Ir        |
+|	  2.| Menedžeris vēlas rediģēt pieprasījumu un iekārtu sarakstu, jo tas ļauj personalizēt un koriģēt procesu                                                                                      | Must have       | Ir        |
+|	  3.| Ražošanas vadītājs vēlas maksimizēt peļņu īsākā laikā, jo tas ir svarīgi uzņēmumam                                                                                                          | Must have       | Ir        |
+|	  4.| Operators vēlas stabilu pieslēgumu mājaslapai, jo tas samazina darba pārtraukumus                                                                                                           | Should have     | Daļēji    |
+|	  5.| Menedžeris vēlas redzēt un mainīt plāna izpildi, jo tas atvieglo sekošanu darba plānam                                                                                                      | Should have     | Daļēji    |
+|	  6.| Menedžeris vēlas zināt iekārtas izmantošanu, jo jāzina, kuras mašīnas kādam operatoram jāpiešķir                                                                                            | Should have     | Ir        |
+|	  7.| Ražošanas vadītājs vēlas redzēt izgatavoto grāmatu skaitu, jo tas palīdz novērtēt ražotnes peļņu                                                                                            | Should have     | Ir        |
+| 	8.| Administrators vēlas aizsargāt privātdatus, jo pastāv datu zādzības un kiberuzbrukumu draudi                                                                                                | Should have     | Ir        |
+|	  9.| Administrators vēlas veidot lietotāja līmeņus, jo katram darbiniekam jābūt piekļuvei atbilstošai informācijai                                                                               | Should have     | Ir        |
+|  10.| Menedžeris vēlas zināt pieejamos materiālus, jo tas ļauj noteikt, cik grāmatas var saražot                                                                                                  | Should have     | Daļēji    |
+|  11.| Menedžeris vēlas redzēt optimāla risinājuma pamatojumu, jo tas pierāda plāna uzticamību un algoritmu saprotamību                                                                            | Should have     | Ir        |
+|  12.| Operators vēlas zināt mašīnas pieejamību, jo tas optimizē darba procesu                                                                                                                     | Could have      | Nav       |
+|  13.| Operators vēlas redzēt instrukcijas plānā, jo jāzina darba secība katrai grāmatai                                                                                                           | Could have      | Ir        |
+|  14.| Menedžeris vēlas redzēt alternatīvas peļņas un drukāšanas iespējas, jo ir svarīgi analizēt izvēles iespējas                                                                                 | Could have      | Ir        |
+|  15.| Menedžeris vēlas redzēt grāmatu veidu un daudzumu vēsturi, jo tas palīdz analizēt drukāšanas plānošanu                                                                                      | Could have      | Ir        |
+|  16.| Ražošanas vadītājs vēlas zināt gada ienākumus, jo tas ļauj novērtēt produktivitāti un rentabilitāti                                                                                         | Could have      | Nav       |
+|  17.| Menedžeris vēlas zināt darba plānu uz noteiktu laiku, jo tas palīdz plānot darbinieku darba laiku un resursus                                                                               | Could have      | Daļēji    |
+|  18.| Menedžeris vēlas redzēt aktuālo informāciju par grāmatu popularitāti, jo tas palīdz pieņemt lēmumus par drukāšanas procesu                                                                  | Would not have  | Nav       |
+|  19.| Menedžeris vēlas zināt pārdošanas prognozes, jo tas ļauj optimizēt ražošanas procesu                                                                                                        | Would not have  | Nav       |
 
 ## Konceptu modelis
 ![](KonceptModel.png)
