@@ -233,7 +233,11 @@ Efektivitātes optimizācija koncentrējas uz augstāku peļņas koeficientu, ne
 
 Izveidotais risinājums ir universāls dažādu tipogrāfijas sistēmu vajadzībām, jo tas piedāvā elastīgas iespējas pielāgot sistēmu atbilstoši konkrētām prasībām. Kā jau tika minēts iepriekš, risinājums ir veidots, lai palīdzētu organizācijām ne tikai palielināt peļņu, bet arī efektīvi apstrādāt un realizēt klientu vēlmes saistībā ar grāmatu izveidi.
 
-Palielinoties minimālajam grāmatu daudzumam, peļņa pieaug. Pat ja tiek izmantota optimizācija ar ierobežojumu pēc optimālā budžeta, optimizācija pēc dienām parāda lielāku peļņu, lai gan tas var prasīt vairāk līdzekļu pašiem materiāliem. Optimizācijas laiks abām pieejām ir aptuveni vienāds, tomēr, palielinoties grāmatu drukāšanā izmantoto iekārtu skaitam, pieaug nepieciešamais laiks pieprasījumu apstrādei un optimizācijai. Tajā pašā laikā optimizācija pēc laika (dienām) darbojas ātrāk, bet izmantotais budžets var būt mazāk optimāls, ja ņem vērā peļņu attiecībā pret iztērēto budžetu.
+Veicot optimizācijas rezultātu analīzi, ir skaidrs, ka optimizācija pēc budžeta un pēc laika atšķiras pēc efektivitātes un piemērotības dažādiem apstākļiem. Palielinoties minimālajam grāmatu drukas apjomam, kopējā peļņa ievērojami pieaug, neatkarīgi no izvēlētās pieejas, norādot uz labvēlīgu peļņas dinamiku lielākos projektos.
+
+Optimizācija pēc laika uzrāda augstāku peļņu, kas saistīta ar ātrāku projektu izpildi un efektīvāku resursu izmantošanu, taču tas var prasīt lielākus sākotnējos ieguldījumus materiālos un resursos. Abu pieeju izpildes laiks ir līdzīgs, taču, pieaugot darba apjomam un izmantoto iekārtu skaitam, optimizācijas process kļūst laikietilpīgāks.
+
+Optimizācija pēc laika darbojas ātrāk, taču var būt mazāk efektīva attiecībā uz iztērēto budžetu, savukārt optimizācija pēc budžeta nodrošina labāku izmaksu kontroli. Izvēle starp šīm pieejām ir atkarīga no prioritātēm – ātrāka peļņas gūšana vai stingrāka budžeta kontrole.
 
 ## Dalibnieku ieguldījums
 | Vārds              | Loma un pienākumi                                                                                                                                                     |
