@@ -168,7 +168,72 @@ Pēc plāna izveides izvēlieties vienu no trim realizācijas iespējām:
 ### Novērtēšanas mēri 
 Programmas laiks(st.), peļņa (eiro)
 
+
+### Eksperementu tabula 
+| Nr. | Grāmatu variācija | Drukāšanas daudzums | Iekārtu daudzums | Algoritms         | Programmas laiks (ms) | Peļņa     |
+|-----|--------------------|---------------------|------------------|-------------------|------------------------|-----------|
+| 1   | 5                  | 10                  | 5                | Pēc budžeta       | 54.69                  | 3110.89   |
+| 2   | 5                  | 100                 | 5                | Pēc budžeta       | 53.76                  | 5201.59   |
+| 3   | 5                  | 500                 | 5                | Pēc budžeta       | 54.94                  | 15726.35  |
+| 4   | 5                  | 10                  | 10               | Pēc budžeta       | 59.38                  | 3177.88   |
+| 5   | 5                  | 100                 | 10               | Pēc budžeta       | 58.05                  | 5404.12   |
+| 6   | 5                  | 500                 | 10               | Pēc budžeta       | 59.80                  | 13828.12  |
+| 7   | 5                  | 10                  | 20               | Pēc budžeta       | 61.27                  | 4809.80   |
+| 8   | 5                  | 100                 | 20               | Pēc budžeta       | 63.83                  | 7572.80   |
+| 9   | 5                  | 500                 | 20               | Pēc budžeta       | 61.87                  | 19852.80  |
+| 10  | 10                 | 10                  | 5                | Pēc budžeta       | 57.31                  | 6089.52   |
+| 11  | 10                 | 100                 | 5                | Pēc budžeta       | 56.10                  | 9417.91   |
+| 12  | 10                 | 500                 | 5                | Pēc budžeta       | 56.62                  | 24197.91  |
+| 13  | 10                 | 10                  | 10               | Pēc budžeta       | 60.62                  | 6446.74   |
+| 14  | 10                 | 100                 | 10               | Pēc budžeta       | 57.71                  | 10567.84  |
+| 15  | 10                 | 500                 | 10               | Pēc budžeta       | 58.95                  | 28883.84  |
+| 16  | 10                 | 10                  | 20               | Pēc budžeta       | 64.74                  | 8628.78   |
+| 17  | 10                 | 100                 | 20               | Pēc budžeta       | 64.17                  | 13724.92  |
+| 18  | 10                 | 500                 | 20               | Pēc budžeta       | 63.15                  | 36656.40  |
+| 19  | 5                  | 10                  | 5                | Pēc dienu skaita  | 54.58                  | 3284.56   |
+| 20  | 5                  | 100                 | 5                | Pēc dienu skaita  | 55.03                  | 5493.25   |
+| 21  | 5                  | 500                 | 5                | Pēc dienu skaita  | 53.25                  | 15792.82  |
+| 22  | 5                  | 10                  | 10               | Pēc dienu skaita  | 60.17                  | 4339.44   |
+| 23  | 5                  | 100                 | 10               | Pēc dienu skaita  | 59.62                  | 6151.68   |
+| 24  | 5                  | 500                 | 10               | Pēc dienu skaita  | 59.40                  | 14742.00  |
+| 25  | 5                  | 10                  | 20               | Pēc dienu skaita  | 62.97                  | 5125.86   |
+| 26  | 5                  | 100                 | 20               | Pēc dienu skaita  | 63.46                  | 7902.24   |
+| 27  | 5                  | 500                 | 20               | Pēc dienu skaita  | 63.17                  | 20200.08  |
+| 28  | 10                 | 10                  | 5                | Pēc dienu skaita  | 54.55                  | 7244.45   |
+| 29  | 10                 | 100                 | 5                | Pēc dienu skaita  | 55.98                  | 10783.24  |
+| 30  | 10                 | 500                 | 5                | Pēc dienu skaita  | 55.11                  | 25469.92  |
+| 31  | 10                 | 10                  | 10               | Pēc dienu skaita  | 61.50                  | 7614.74   |
+| 32  | 10                 | 100                 | 10               | Pēc dienu skaita  | 60.18                  | 11597.78  |
+| 33  | 10                 | 500                 | 10               | Pēc dienu skaita  | 60.53                  | 32053.00  |
+| 34  | 10                 | 10                  | 20               | Pēc dienu skaita  | 64.81                  | 11465.16  |
+| 35  | 10                 | 100                 | 20               | Pēc dienu skaita  | 67.11                  | 16462.62  |
+| 36  | 10                 | 500                 | 20               | Pēc dienu skaita  | 67.88                  | 38941.00  |
+
+
+## Eksperimentu grafiki
+![](GrafiksPelna.png)
+
+![](GrafiksLaiks.png)
+
+### Eksperimentu analīze
+
+Katrs eksperiments ietvēra 5–10 grāmatu apstrādi, izmantojot dažādu ražošanas iekārtu daudzumu ar dažādiem minimālajiem grāmatu daudzumiem.
+Budžeta optimizācija nodrošina maksimālu resursu izmantošanu un augstu peļņu, bet prasa vairāk programmas izpildes laika.
+Laika optimizācija piedāvā līdzsvaru starp peļņu un termiņu ievērošanu, saglabājot labu efektivitāti.
+Efektivitātes optimizācija koncentrējas uz augstāku peļņas koeficientu, nezaudējot precizitāti, bet ne vienmēr izmanto visu pieejamo budžetu.
+
+* Algoritmu salīdzināšana pēc izpildes laika (ms):
+Šajā diagrammā tiek salīdzināti divu optimizācijas veidu – "Optimizācija pēc budžeta" un "Optimizācija pēc laika" – vidējie izpildes laiki (milisekundēs) 18 dažādiem gadījumiem. Abi optimizācijas veidi parāda līdzīgus rezultātus, kur vidējais izpildes laiks ir aptuveni 60–70 ms lielākajā daļā gadījumu. Izpildes laiks ir diezgan vienmērīgs starp abām pieejām.
+
+* Algoritmu salīdzināšana pēc peļņas:
+Šis grafiks salīdzina "Optimizāciju pēc budžeta" un "Optimizāciju pēc laika" attiecībā uz iegūto peļņu dažādiem scenārijiem. Diagramma norāda, ka "Optimizācija pēc laika" lielākajā daļā gadījumu nodrošina augstāku peļņu, īpaši lielākajos gadījumos (piemēram, no 15. līdz 18. gadījumam). Savukārt "Optimizācija pēc budžeta" ir efektīvāka dažos gadījumos, taču kopumā nodrošina zemāku rezultātu.
+
+
 # Secinājumi
+
+Izveidotais risinājums ir universāls dažādu tipogrāfijas sistēmu vajadzībām, jo tas piedāvā elastīgas iespējas pielāgot sistēmu atbilstoši konkrētām prasībām. Kā jau tika minēts iepriekš, risinājums ir veidots, lai palīdzētu organizācijām ne tikai palielināt peļņu, bet arī efektīvi apstrādāt un realizēt klientu vēlmes saistībā ar grāmatu izveidi.
+
+Palielinoties minimālajam grāmatu daudzumam, peļņa pieaug. Pat ja tiek izmantota optimizācija ar ierobežojumu pēc optimālā budžeta, optimizācija pēc dienām parāda lielāku peļņu, lai gan tas var prasīt vairāk līdzekļu pašiem materiāliem. Optimizācijas laiks abām pieejām ir aptuveni vienāds, tomēr, palielinoties grāmatu drukāšanā izmantoto iekārtu skaitam, pieaug nepieciešamais laiks pieprasījumu apstrādei un optimizācijai. Tajā pašā laikā optimizācija pēc laika (dienām) darbojas ātrāk, bet izmantotais budžets var būt mazāk optimāls, ja ņem vērā peļņu attiecībā pret iztērēto budžetu.
 
 ## Dalibnieku ieguldījums
 | Vārds              | Loma un pienākumi                                                                                                                                                     |
